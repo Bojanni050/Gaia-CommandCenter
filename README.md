@@ -93,22 +93,87 @@ uvicorn app.main:app --reload --port 8000
 
 ---
 
-## Deployment op de Ubuntu VPS
+## Installatie & Deployment via GitHub
 
-Het Control Center is gecontaineriseerd in een multi-stage Dockerfile en draait met `network_mode: host` zodat het direct over Tailscale (`100.65.0.15:8899`) bereikbaar is zonder poortconflicten of bridge-routeringsproblemen.
+Het Control Center is volledig gecontaineriseerd via een multi-stage Dockerfile en draait met `network_mode: host`. Hierdoor kan de backend direct en met minimale overhead communiceren met de lokale Docker socket (`/var/run/docker.sock`), de health endpoints van Gaia op localhost en het Tailscale IP (`100.65.0.15:8899`).
 
-1. **Kopieer project naar VPS**:
-   ```bash
-   scp -r . contabo:/opt/gaia-control-center
-   ```
-2. **Maak `.env` aan**:
-   ```bash
-   cp .env.example .env
-   # Vul ADMIN_PASSWORD en SECRET_KEY in
-   ```
-3. **Start de container**:
-   ```bash
-   docker compose up -d --build
-   ```
-4. **Open in browser**:
-   `http://100.65.0.15:8899`
+### Vereisten op de Server
+
+- Ubuntu VPS met Docker Engine & Docker Compose plugin geïnstalleerd
+- Git
+- Tailscale (aanbevolen voor veilige toegang tot poort `8899`)
+
+---
+
+### Eerste Installatie
+
+Voer de volgende commando's uit op de VPS (bijvoorbeeld via SSH als root):
+
+```bash
+# 1. Navigeer naar /opt (of gewenste directory)
+cd /opt
+
+# 2. Clone de repository vanaf GitHub
+git clone https://github.com/Bojanni050/Gaia-CommandCenter.git gaia-control-center
+cd gaia-control-center
+
+# 3. Maak het omgevingsbestand aan
+cp .env.example .env
+
+# 4. Stel een veilig beheerderswachtwoord en secret key in
+nano .env
+```
+
+Voorbeeld `.env`:
+```ini
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=jouw-veilige-wachtwoord
+SECRET_KEY=willekeurige-lange-sleutel-voor-jwt
+PORT=8899
+TAILSCALE_HOST=100.65.0.15
+```
+
+```bash
+# 5. Bouw en start de container in de achtergrond
+docker compose up -d --build
+
+# 6. Controleer de status en logs
+docker compose ps
+docker compose logs -f
+```
+
+Open vervolgens in je browser:
+```text
+http://100.65.0.15:8899
+```
+
+---
+
+### Updaten naar een Nieuwere Versie via GitHub
+
+Wanneer er wijzigingen zijn gepusht naar de GitHub repository:
+
+```bash
+cd /opt/gaia-control-center
+
+# Haal de laatste commits op
+git pull origin main
+
+# Rebuild en herstart de container zonder downtime
+docker compose up -d --build
+```
+
+---
+
+### Handige Beheercommando's
+
+```bash
+# Logs bekijken
+docker compose logs -f --tail=100
+
+# Container herstarten
+docker compose restart
+
+# Container stoppen
+docker compose down
+```
