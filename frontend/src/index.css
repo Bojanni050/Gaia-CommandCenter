@@ -2,147 +2,170 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg-space: #070b12;
-  --bg-panel: #0d1322;
-  --bg-card: #121a2d;
-  --bg-card-hover: #17223b;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(230, 180, 80, 0.35);
-  
-  --gaia-gold: #e6b450;
-  --gaia-gold-glow: rgba(230, 180, 80, 0.25);
-  
-  --status-ok: #10b981;
-  --status-ok-glow: rgba(16, 185, 129, 0.3);
-  --status-warn: #f59e0b;
-  --status-error: #ef4444;
-  --status-stopped: #64748b;
-  --status-unknown: #8b5cf6;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #0d0c0a;
+    color: #e9e7e0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: rgba(93, 125, 100, 0.35);
+    color: #f6f5f2;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0d0c0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2e2c26;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #46433a;
+  }
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer utilities {
+  .font-serif {
+    font-family: "Cormorant Garamond", Georgia, serif;
+  }
+
+  .font-mono {
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  .gradient-text-gold {
+    background: linear-gradient(135deg, #f5edd8 0%, #dcbe88 50%, #c08a44 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .gradient-text-sage {
+    background: linear-gradient(135deg, #e3ebe4 0%, #c7d7ca 40%, #7c9a82 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Glass Panels matching intro.higaia.nl */
+  .glass-panel {
+    background: rgba(22, 21, 19, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 245, 230, 0.07);
+    border-radius: 12px;
+  }
+
+  .glass-card {
+    background: rgba(26, 25, 22, 0.65);
+    border: 1px solid rgba(255, 245, 230, 0.06);
+    border-radius: 12px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card:hover {
+    background: rgba(36, 34, 30, 0.75);
+    border-color: rgba(205, 160, 94, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Gaia Gold & Editorial Buttons */
+  .btn-gaia {
+    background: linear-gradient(135deg, #cda05e 0%, #a97038 100%);
+    color: #0d0c0a;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 0.55rem 1.1rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 10px rgba(205, 160, 94, 0.2);
+  }
+
+  .btn-gaia:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 16px rgba(205, 160, 94, 0.35);
+  }
+
+  .btn-ghost {
+    background: rgba(255, 245, 230, 0.04);
+    border: 1px solid rgba(255, 245, 230, 0.08);
+    color: #b3aea0;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255, 245, 230, 0.09);
+    color: #f6f5f2;
+    border-color: rgba(205, 160, 94, 0.3);
+  }
+
+  /* Status Breathing Pulses with Sage/Gold/Clay */
+  .status-orb-running {
+    background-color: #5d7d64;
+    box-shadow: 0 0 10px rgba(93, 125, 100, 0.6);
+    animation: orb-breathe 4s ease-in-out infinite;
+  }
+
+  .status-orb-stopped {
+    background-color: #5b574a;
+  }
+
+  .status-orb-unhealthy {
+    background-color: #bd9270;
+    box-shadow: 0 0 10px rgba(189, 146, 112, 0.6);
+    animation: orb-breathe 1.8s ease-in-out infinite;
+  }
+
+  .status-orb-starting {
+    background-color: #cda05e;
+    box-shadow: 0 0 8px rgba(205, 160, 94, 0.5);
+    animation: orb-breathe 2.5s ease-in-out infinite;
+  }
+
+  /* Grain overlay */
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
 }
 
-body {
-  background-color: var(--bg-space);
-  color: #e2e8f0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
-  min-height: 100vh;
-}
-
-code, pre, .font-mono {
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(230, 180, 80, 0.4);
-}
-
-/* Glassmorphism & Panel Utilities */
-.glass-panel {
-  background: rgba(13, 19, 34, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-}
-
-.glass-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-card:hover {
-  background: var(--bg-card-hover);
-  border-color: rgba(255, 255, 255, 0.14);
-  transform: translateY(-1px);
-}
-
-/* Status Breathing Pulse */
 @keyframes orb-breathe {
   0%, 100% {
     transform: scale(1);
-    opacity: 0.9;
+    opacity: 0.85;
   }
   50% {
-    transform: scale(1.15);
+    transform: scale(1.18);
     opacity: 1;
   }
-}
-
-.status-orb-running {
-  background-color: var(--status-ok);
-  box-shadow: 0 0 10px var(--status-ok-glow);
-  animation: orb-breathe 3.5s ease-in-out infinite;
-}
-
-.status-orb-stopped {
-  background-color: var(--status-stopped);
-}
-
-.status-orb-unhealthy {
-  background-color: var(--status-error);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
-  animation: orb-breathe 1.5s ease-in-out infinite;
-}
-
-.status-orb-starting {
-  background-color: var(--status-warn);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
-  animation: orb-breathe 2s ease-in-out infinite;
-}
-
-/* Gaia Gold Button */
-.btn-gaia {
-  background: linear-gradient(135deg, #e6b450 0%, #c49536 100%);
-  color: #070b12;
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(230, 180, 80, 0.2);
-}
-
-.btn-gaia:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 4px 14px rgba(230, 180, 80, 0.35);
-}
-
-.btn-ghost {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  color: #cbd5e1;
-  border-radius: 6px;
-  padding: 0.5rem 0.85rem;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
 }

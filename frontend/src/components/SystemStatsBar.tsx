@@ -11,7 +11,7 @@ export const SystemStatsBar: React.FC<SystemStatsBarProps> = ({ metrics }) => {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-28 rounded-xl bg-[#0e1424] border border-white/5" />
+          <div key={i} className="h-28 rounded-xl bg-ink-900/60 border border-ink-800/60" />
         ))}
       </div>
     );
@@ -23,11 +23,12 @@ export const SystemStatsBar: React.FC<SystemStatsBarProps> = ({ metrics }) => {
   const diskUsedGb = (disk.used / (1024 ** 3)).toFixed(0);
   const diskTotalGb = (disk.total / (1024 ** 3)).toFixed(0);
 
-  // Status helper for progress colors
-  const getProgressColor = (percent: number) => {
-    if (percent > 85) return 'bg-red-500';
-    if (percent > 65) return 'bg-amber-500';
-    return 'bg-[#e6b450]';
+  const getMeterGradient = (percent: number, baseType: 'gold' | 'sage' | 'clay') => {
+    if (percent > 90) return 'bg-gradient-to-r from-clay-600 to-clay-400';
+    if (percent > 75) return 'bg-gradient-to-r from-gold-600 to-gold-400';
+    if (baseType === 'sage') return 'bg-gradient-to-r from-sage-600 to-sage-400';
+    if (baseType === 'gold') return 'bg-gradient-to-r from-gold-600 to-gold-400';
+    return 'bg-gradient-to-r from-clay-600 to-clay-400';
   };
 
   return (
@@ -35,21 +36,23 @@ export const SystemStatsBar: React.FC<SystemStatsBarProps> = ({ metrics }) => {
       {/* CPU Card */}
       <div className="glass-card p-4 relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Cpu className="w-4 h-4 text-[#ffd166]" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">CPU Belasting</span>
+          <div className="flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-gold-400" />
+            <span className="text-[11px] font-sans font-medium uppercase tracking-wider text-ink-400">
+              CPU Belasting
+            </span>
           </div>
-          <span className="text-lg font-bold font-mono text-slate-100">{cpu.percent}%</span>
+          <span className="text-lg font-mono font-medium text-ink-100">{cpu.percent}%</span>
         </div>
 
-        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mb-3">
+        <div className="w-full bg-ink-950/80 h-1.5 rounded-full overflow-hidden mb-3 border border-ink-800/40">
           <div
-            className={`h-full transition-all duration-500 ${getProgressColor(cpu.percent)}`}
+            className={`h-full transition-all duration-500 ${getMeterGradient(cpu.percent, 'gold')}`}
             style={{ width: `${Math.min(100, Math.max(0, cpu.percent))}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+        <div className="flex items-center justify-between text-[11px] font-mono text-ink-400">
           <span>{cpu.core_count} Cores</span>
           <span>Load: {cpu.load_average.join(', ')}</span>
         </div>
@@ -58,22 +61,24 @@ export const SystemStatsBar: React.FC<SystemStatsBarProps> = ({ metrics }) => {
       {/* Memory Card */}
       <div className="glass-card p-4 relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Activity className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">RAM Geheugen</span>
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-sage-400" />
+            <span className="text-[11px] font-sans font-medium uppercase tracking-wider text-ink-400">
+              RAM Geheugen
+            </span>
           </div>
-          <span className="text-lg font-bold font-mono text-slate-100">{memory.percent}%</span>
+          <span className="text-lg font-mono font-medium text-ink-100">{memory.percent}%</span>
         </div>
 
-        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mb-3">
+        <div className="w-full bg-ink-950/80 h-1.5 rounded-full overflow-hidden mb-3 border border-ink-800/40">
           <div
-            className={`h-full transition-all duration-500 ${getProgressColor(memory.percent)}`}
+            className={`h-full transition-all duration-500 ${getMeterGradient(memory.percent, 'sage')}`}
             style={{ width: `${Math.min(100, Math.max(0, memory.percent))}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-          <span>{memUsedGb} GB / {memTotalGb} GB</span>
+        <div className="flex items-center justify-between text-[11px] font-mono text-ink-400">
+          <span>{memUsedGb} / {memTotalGb} GB</span>
           <span>Vrij: {((memory.available / (1024 ** 3))).toFixed(1)} GB</span>
         </div>
       </div>
@@ -81,46 +86,50 @@ export const SystemStatsBar: React.FC<SystemStatsBarProps> = ({ metrics }) => {
       {/* Disk Card */}
       <div className="glass-card p-4 relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-slate-300">
-            <HardDrive className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">Opslag (SSD)</span>
+          <div className="flex items-center gap-2">
+            <HardDrive className="w-4 h-4 text-clay-400" />
+            <span className="text-[11px] font-sans font-medium uppercase tracking-wider text-ink-400">
+              Opslag (SSD)
+            </span>
           </div>
-          <span className="text-lg font-bold font-mono text-slate-100">{disk.percent}%</span>
+          <span className="text-lg font-mono font-medium text-ink-100">{disk.percent}%</span>
         </div>
 
-        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mb-3">
+        <div className="w-full bg-ink-950/80 h-1.5 rounded-full overflow-hidden mb-3 border border-ink-800/40">
           <div
-            className={`h-full transition-all duration-500 ${getProgressColor(disk.percent)}`}
+            className={`h-full transition-all duration-500 ${getMeterGradient(disk.percent, 'clay')}`}
             style={{ width: `${Math.min(100, Math.max(0, disk.percent))}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-          <span>{diskUsedGb} GB / {diskTotalGb} GB</span>
-          <span>{((disk.free / (1024 ** 3))).toFixed(0)} GB over</span>
+        <div className="flex items-center justify-between text-[11px] font-mono text-ink-400">
+          <span>{diskUsedGb} / {diskTotalGb} GB</span>
+          <span>{((disk.free / (1024 ** 3))).toFixed(0)} GB vrij</span>
         </div>
       </div>
 
       {/* Docker Engine Card */}
       <div className="glass-card p-4 relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Database className="w-4 h-4 text-blue-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">Docker Engine</span>
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-ink-300" />
+            <span className="text-[11px] font-sans font-medium uppercase tracking-wider text-ink-400">
+              Docker Engine
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${docker.available ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-red-400'}`} />
-            <span className="text-xs font-mono text-slate-300">{docker.available ? 'OK' : 'Offline'}</span>
+            <div className={`w-2 h-2 rounded-full ${docker.available ? 'bg-sage-400 status-orb-running' : 'bg-clay-400'}`} />
+            <span className="text-xs font-mono text-ink-200">{docker.available ? 'Actief' : 'Offline'}</span>
           </div>
         </div>
 
-        <div className="text-xs text-slate-400 font-mono mt-1 mb-3">
-          Versie: <span className="text-slate-200">{docker.server_version}</span>
+        <div className="text-xs text-ink-400 font-mono mt-1 mb-3">
+          Versie: <span className="text-ink-200">{docker.server_version}</span>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1 border-t border-white/5">
-          <span className="text-emerald-400 font-medium">{docker.containers_running} Draaiend</span>
-          <span className={docker.containers_stopped > 0 ? 'text-amber-400' : 'text-slate-500'}>
+        <div className="flex items-center justify-between text-[11px] font-mono text-ink-400 pt-1 border-t border-ink-800/50">
+          <span className="text-sage-400 font-medium">{docker.containers_running} Draaiend</span>
+          <span className={docker.containers_stopped > 0 ? 'text-gold-400' : 'text-ink-500'}>
             {docker.containers_stopped} Gestopt
           </span>
           <span>{docker.containers_total} Totaal</span>

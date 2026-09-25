@@ -8,7 +8,7 @@ import { LogsModal } from './components/LogsModal';
 import { LoginPage } from './components/LoginPage';
 import { api } from './services/api';
 import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from './types';
-import { ExternalLink, Layers, Box, Activity, AlertCircle } from 'lucide-react';
+import { ExternalLink, Layers, Box, Activity, AlertCircle, Compass } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers'>('overview');
@@ -85,13 +85,19 @@ export const App: React.FC = () => {
 
   if (authStatus === null) {
     return (
-      <div className="min-h-screen w-full bg-[#060911] flex flex-col items-center justify-center font-mono select-none">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#997321] via-[#e6b450] to-[#ffd166] flex items-center justify-center shadow-xl shadow-[#e6b450]/20 mb-4 animate-pulse">
-          <div className="w-6 h-6 rounded-full bg-[#080d19] flex items-center justify-center">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#ffd166] status-orb-running" />
+      <div className="min-h-screen w-full bg-ink-950 flex flex-col items-center justify-center font-sans select-none grain">
+        <div className="relative mb-5 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-gold-600/30 to-sage-400/30 blur-md animate-breathe pointer-events-none" />
+          <div className="absolute w-12 h-12 rounded-full bg-ink-900 border border-gold-400/40 flex items-center justify-center shadow-lg">
+            <div className="w-4 h-4 rounded-full bg-gold-400/80 status-orb-running" />
           </div>
         </div>
-        <p className="text-xs text-slate-400 tracking-wider">GAIA CONTROL CENTER &bull; INITIALISEREN...</p>
+        <h2 className="font-serif text-xl font-light text-ink-100 tracking-wide mb-1">
+          <span className="italic text-gold-400">Gaia</span> Control Center
+        </h2>
+        <p className="text-xs text-ink-500 font-mono tracking-widest uppercase">
+          Verbinden met cognitieve kern...
+        </p>
       </div>
     );
   }
@@ -105,7 +111,7 @@ export const App: React.FC = () => {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 flex flex-col font-sans selection:bg-[#e6b450]/30 selection:text-white">
+    <div className="min-h-screen bg-ink-950 text-ink-100 flex flex-col font-sans selection:bg-gold-500/25 selection:text-gold-200 grain">
       {/* Top Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -118,17 +124,17 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-7">
         {/* Error Alert */}
         {error && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-between text-xs font-mono">
+          <div className="p-4 rounded-xl bg-clay-950/60 border border-clay-700/50 text-clay-300 flex items-center justify-between text-xs font-mono">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-clay-400" />
               <span>{error}</span>
             </div>
             <button
               onClick={() => fetchData(true)}
-              className="text-xs text-red-300 underline hover:text-white"
+              className="text-xs text-gold-300 underline hover:text-ink-100"
             >
               Opnieuw proberen
             </button>
@@ -140,30 +146,38 @@ export const App: React.FC = () => {
 
         {/* TAB 1: OVERVIEW DASHBOARD */}
         {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Quick Status Bar */}
-            <div className="glass-panel p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/10">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#e6b450]/10 border border-[#e6b450]/20 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-[#ffd166]" />
+          <div className="space-y-7">
+            {/* Editorial Quick Status Bar */}
+            <div className="glass-panel p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-ink-800 relative overflow-hidden">
+              {/* Subtle ambient lighting */}
+              <div className="absolute -top-20 -left-20 w-60 h-60 bg-gold-500/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-sage-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-ink-900 border border-gold-400/30 flex items-center justify-center shadow-md">
+                  <Activity className="w-6 h-6 text-gold-400" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-100 font-mono">GAIA SERVER STATUS</h2>
-                  <p className="text-xs text-slate-400">
-                    {runningComponentsCount} van de {components.length} Gaia componenten zijn operationeel
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-serif text-xl sm:text-2xl font-light text-ink-50">
+                      Gaia Status &amp; <span className="italic text-gold-400 font-normal">Cognitie</span>
+                    </h2>
+                  </div>
+                  <p className="text-xs text-ink-400 mt-0.5 font-sans leading-relaxed">
+                    {runningComponentsCount} van de {components.length} autonome Gaia componenten zijn operationeel
                   </p>
                 </div>
               </div>
 
               {/* Status Pills */}
-              <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <div className="flex flex-wrap items-center gap-2.5 font-mono text-xs relative z-10">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-sage-950/70 text-sage-300 border border-sage-700/60 shadow-sm">
                   <span className="w-2 h-2 rounded-full status-orb-running" />
-                  <span>{runningComponentsCount} OK</span>
+                  <span>{runningComponentsCount} Actief</span>
                 </div>
                 {components.length - runningComponentsCount > 0 && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-clay-950/70 text-clay-300 border border-clay-700/60 shadow-sm">
+                    <span className="w-2 h-2 rounded-full status-orb-unhealthy" />
                     <span>{components.length - runningComponentsCount} Aandacht</span>
                   </div>
                 )}
@@ -171,19 +185,19 @@ export const App: React.FC = () => {
             </div>
 
             {/* Gaia Components Section */}
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#ffd166]" />
-                  <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider font-mono">
-                    Gaia Componenten Overzicht
+                  <Layers className="w-4 h-4 text-gold-400" />
+                  <h3 className="font-serif text-xl font-normal text-ink-100">
+                    Gaia Componenten
                   </h3>
                 </div>
                 <button
                   onClick={() => setActiveTab('components')}
-                  className="text-xs text-[#ffd166] hover:underline font-mono"
+                  className="text-xs text-gold-400 hover:text-gold-300 hover:underline font-mono"
                 >
-                  Alle bekijken &rarr;
+                  Alle {components.length} bekijken &rarr;
                 </button>
               </div>
 
@@ -200,10 +214,10 @@ export const App: React.FC = () => {
             </div>
 
             {/* Quick Web Interfaces Links */}
-            <div className="glass-panel p-5 border border-white/10">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-                <ExternalLink className="w-3.5 h-3.5 text-[#ffd166]" />
-                Directe Toegang tot Bestaande Webinterfaces
+            <div className="glass-panel p-6 border border-ink-800">
+              <h3 className="font-serif text-base font-medium text-ink-200 mb-4 flex items-center gap-2">
+                <Compass className="w-4 h-4 text-gold-400" />
+                <span>Directe Toegang tot Bestaande Webinterfaces</span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {components
@@ -214,34 +228,34 @@ export const App: React.FC = () => {
                       href={comp.ui_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-[#e6b450]/30 transition-all flex items-center justify-between group"
+                      className="p-3.5 rounded-xl bg-ink-900/60 hover:bg-ink-850 border border-ink-800 hover:border-gold-400/40 transition-all flex items-center justify-between group shadow-sm"
                     >
                       <div>
-                        <div className="text-xs font-semibold text-slate-200 group-hover:text-[#ffd166] transition-colors font-mono">
+                        <div className="text-xs font-semibold text-ink-200 group-hover:text-gold-300 transition-colors font-mono">
                           {comp.ui_label || comp.name}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate max-w-[180px]">
+                        <div className="text-[11px] text-ink-500 font-mono mt-0.5 truncate max-w-[180px]">
                           {comp.ui_url}
                         </div>
                       </div>
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#ffd166] transition-colors" />
+                      <ExternalLink className="w-3.5 h-3.5 text-ink-500 group-hover:text-gold-400 transition-colors" />
                     </a>
                   ))}
               </div>
             </div>
 
             {/* Recent Containers Snapshot */}
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Box className="w-4 h-4 text-blue-400" />
-                  <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider font-mono">
+                  <Box className="w-4 h-4 text-ink-400" />
+                  <h3 className="font-serif text-xl font-normal text-ink-100">
                     Docker Containers Snapshot
                   </h3>
                 </div>
                 <button
                   onClick={() => setActiveTab('containers')}
-                  className="text-xs text-[#ffd166] hover:underline font-mono"
+                  className="text-xs text-gold-400 hover:text-gold-300 hover:underline font-mono"
                 >
                   Volledige tabel &rarr;
                 </button>
@@ -262,11 +276,13 @@ export const App: React.FC = () => {
         {/* TAB 2: GAIA COMPONENTS */}
         {activeTab === 'components' && (
           <div className="space-y-4">
-            <div className="glass-panel p-4 flex items-center justify-between border border-white/10">
+            <div className="glass-panel p-5 flex items-center justify-between border border-ink-800">
               <div>
-                <h2 className="text-base font-bold text-slate-100 font-mono">GAIA COMPONENT REGISTRY</h2>
-                <p className="text-xs text-slate-400">
-                  Conceptuele architectuur van Gaia. Containers fungeren als onderliggende infrastructuur.
+                <h2 className="font-serif text-2xl font-light text-ink-100">
+                  <span className="italic text-gold-400">Gaia</span> Component Registry
+                </h2>
+                <p className="text-xs text-ink-400 mt-1 font-sans">
+                  Conceptuele architectuur van Gaia. Containers en processen fungeren als onderliggend zenuwstelsel.
                 </p>
               </div>
             </div>
@@ -287,11 +303,13 @@ export const App: React.FC = () => {
         {/* TAB 3: CONTAINERS / INFRASTRUCTURE */}
         {activeTab === 'containers' && (
           <div className="space-y-4">
-            <div className="glass-panel p-4 flex items-center justify-between border border-white/10">
+            <div className="glass-panel p-5 flex items-center justify-between border border-ink-800">
               <div>
-                <h2 className="text-base font-bold text-slate-100 font-mono">INFRASTRUCTUUR & DOCKER</h2>
-                <p className="text-xs text-slate-400">
-                  Alle draaiende Docker containers, poortmappings, images en geheugenbelasting op de VPS.
+                <h2 className="font-serif text-2xl font-light text-ink-100">
+                  Infrastructuur &amp; <span className="italic text-gold-400">Docker</span>
+                </h2>
+                <p className="text-xs text-ink-400 mt-1 font-sans">
+                  Alle containers op de VPS, inclusief geheugengebruik, cpu belasting en gekoppelde netwerkpoorten.
                 </p>
               </div>
             </div>
@@ -309,10 +327,14 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-6 text-center text-xs text-slate-500 font-mono bg-[#070b12]">
+      <footer className="border-t border-ink-800/80 py-6 text-center text-xs text-ink-500 font-mono bg-ink-950/90 mt-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Gaia Server Control Center &bull; Ubuntu VPS (Tailscale: 100.65.0.15)</span>
-          <span className="text-slate-600">Docker Engine API v1.55 &bull; Gaia Cloud Architecture</span>
+          <span className="text-ink-400">
+            Gaia Server Control Center &bull; Ubuntu VPS (Tailscale: 100.65.0.15)
+          </span>
+          <span className="text-ink-600">
+            Inspiratie: intro.higaia.nl &bull; Docker Engine API v1.55
+          </span>
         </div>
       </footer>
 

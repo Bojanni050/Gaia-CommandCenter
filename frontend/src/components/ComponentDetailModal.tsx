@@ -60,24 +60,24 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        className="w-full max-w-4xl max-h-[90vh] glass-panel bg-[#0d1322] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-4xl max-h-[90vh] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-start justify-between bg-[#090e1a]/80">
+        <div className="p-6 border-b border-ink-800 flex items-start justify-between bg-ink-950/80">
           <div>
             <div className="flex items-center gap-2.5 mb-1.5">
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#e6b450]/15 text-[#ffd166] border border-[#e6b450]/30 uppercase font-semibold">
+              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-gold-400/10 text-gold-300 border border-gold-400/25 uppercase font-semibold">
                 {category}
               </span>
-              <span className="text-xs font-mono text-slate-400">
+              <span className="text-xs font-mono text-ink-400">
                 ID: {component.id}
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
-              {name}
+            <h2 className="font-serif text-2xl font-light text-ink-50 flex items-center gap-3">
+              <span>{name}</span>
               {has_ui && ui_url && (
                 <button
                   onClick={() => window.open(ui_url, '_blank')}
@@ -92,31 +92,31 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-all"
+            className="p-2 rounded-lg bg-ink-800/60 hover:bg-ink-800 text-ink-400 hover:text-ink-200 border border-ink-700/50 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 pt-3 border-b border-white/5 flex gap-4 bg-[#090e1a]/40">
+        <div className="px-6 pt-3 border-b border-ink-800/80 flex gap-4 bg-ink-950/40">
           <button
             onClick={() => setActiveTab('details')}
             className={`pb-3 text-xs font-mono font-medium transition-all border-b-2 ${
               activeTab === 'details'
-                ? 'text-[#ffd166] border-[#ffd166]'
-                : 'text-slate-400 border-transparent hover:text-slate-200'
+                ? 'text-gold-300 border-gold-400'
+                : 'text-ink-400 border-transparent hover:text-ink-200'
             }`}
           >
-            Specificaties & Status
+            Specificaties &amp; Status
           </button>
           {container && (
             <button
               onClick={() => setActiveTab('logs')}
               className={`pb-3 text-xs font-mono font-medium transition-all border-b-2 flex items-center gap-1.5 ${
                 activeTab === 'logs'
-                  ? 'text-[#ffd166] border-[#ffd166]'
-                  : 'text-slate-400 border-transparent hover:text-slate-200'
+                  ? 'text-gold-300 border-gold-400'
+                  : 'text-ink-400 border-transparent hover:text-ink-200'
               }`}
             >
               <Terminal className="w-3.5 h-3.5" />
@@ -126,28 +126,28 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+        <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {activeTab === 'details' ? (
             <>
               {/* Gaia Role & Function */}
               <div className="space-y-2">
-                <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider">Gaia Functie & Rol</h4>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                  <p className="text-sm text-slate-200 leading-relaxed">{description}</p>
+                <h4 className="text-xs font-mono text-ink-400 uppercase tracking-wider">Gaia Functie &amp; Rol</h4>
+                <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-800/80">
+                  <p className="text-sm text-ink-200 leading-relaxed font-sans">{description}</p>
                 </div>
               </div>
 
               {/* Status & Health Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Health Check */}
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
+                <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-800/80 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                    <h4 className="text-xs font-mono text-ink-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-sage-400" />
                       Health Endpoint
                     </h4>
-                    <span className={`text-xs font-mono px-2 py-0.5 rounded ${
-                      health_check?.status === 'ok' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
+                    <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${
+                      health_check?.status === 'ok' ? 'bg-sage-950/80 text-sage-300 border border-sage-700/50' : 'bg-clay-950/80 text-clay-300 border border-clay-700/50'
                     }`}>
                       {health_check?.status ? health_check.status.toUpperCase() : 'N/A'}
                     </span>
@@ -155,26 +155,26 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
 
                   {health_check ? (
                     <div className="space-y-2 text-xs font-mono">
-                      <div className="text-slate-300 break-all bg-black/30 p-2 rounded">
+                      <div className="text-ink-300 break-all bg-ink-900 p-2 rounded border border-ink-800">
                         {health_check.endpoint}
                       </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Latency: <strong className="text-slate-200">{health_check.latency_ms} ms</strong></span>
-                        <span>HTTP Code: <strong className="text-slate-200">{health_check.status_code || 'N/A'}</strong></span>
+                      <div className="flex justify-between text-ink-400">
+                        <span>Latency: <strong className="text-ink-200">{health_check.latency_ms} ms</strong></span>
+                        <span>HTTP Code: <strong className="text-ink-200">{health_check.status_code || 'N/A'}</strong></span>
                       </div>
                       {health_check.response && (
                         <div className="mt-2">
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                          <div className="flex items-center justify-between text-[11px] text-ink-400 mb-1">
                             <span>Response Payload:</span>
                             <button
                               onClick={handleCopyPayload}
-                              className="flex items-center gap-1 text-[10px] text-[#ffd166] hover:underline"
+                              className="flex items-center gap-1 text-[10px] text-gold-300 hover:underline"
                             >
-                              {copiedPayload ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              {copiedPayload ? <Check className="w-3 h-3 text-sage-400" /> : <Copy className="w-3 h-3" />}
                               <span>{copiedPayload ? 'Gekopieerd' : 'Kopieer JSON'}</span>
                             </button>
                           </div>
-                          <pre className="p-2.5 rounded bg-black/50 text-[11px] text-emerald-300 overflow-x-auto max-h-32 border border-white/5">
+                          <pre className="p-2.5 rounded bg-ink-950 text-[11px] text-sage-300 overflow-x-auto max-h-32 border border-ink-800">
                             {typeof health_check.response === 'object'
                               ? JSON.stringify(health_check.response, null, 2)
                               : String(health_check.response)}
@@ -183,18 +183,18 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500 font-mono">Geen health endpoint geconfigureerd.</p>
+                    <p className="text-xs text-ink-500 font-mono">Geen health endpoint geconfigureerd.</p>
                   )}
                 </div>
 
                 {/* Container & Hardware Stats */}
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
+                <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-800/80 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Box className="w-3.5 h-3.5 text-blue-400" />
+                    <h4 className="text-xs font-mono text-ink-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Box className="w-3.5 h-3.5 text-gold-400" />
                       Infrastructuur
                     </h4>
-                    <span className="text-xs font-mono text-slate-300">
+                    <span className="text-xs font-mono text-ink-300">
                       {container ? `Container: ${container}` : runtime ? `Runtime: ${runtime}` : 'Geïntegreerd'}
                     </span>
                   </div>
@@ -202,18 +202,18 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                   <div className="space-y-2 text-xs font-mono">
                     {container_stats ? (
                       <>
-                        <div className="flex justify-between text-slate-300">
+                        <div className="flex justify-between text-ink-300">
                           <span>CPU Verbruik:</span>
-                          <span className="font-semibold text-[#ffd166]">{container_stats.cpu_percent}%</span>
+                          <span className="font-semibold text-gold-400">{container_stats.cpu_percent}%</span>
                         </div>
-                        <div className="flex justify-between text-slate-300">
+                        <div className="flex justify-between text-ink-300">
                           <span>RAM Verbruik:</span>
-                          <span className="font-semibold text-emerald-400">
+                          <span className="font-semibold text-sage-400">
                             {(container_stats.memory_usage / (1024 * 1024)).toFixed(1)} MB
                           </span>
                         </div>
                         {container_stats.net_rx_bytes !== undefined && (
-                          <div className="flex justify-between text-slate-400 text-[11px]">
+                          <div className="flex justify-between text-ink-400 text-[11px]">
                             <span>Netwerk I/O:</span>
                             <span>
                               &darr; {(container_stats.net_rx_bytes / 1024).toFixed(0)} KB / &uarr; {((container_stats.net_tx_bytes || 0) / 1024).toFixed(0)} KB
@@ -222,15 +222,15 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                         )}
                       </>
                     ) : (
-                      <p className="text-xs text-slate-500">Live containerstatistieken niet beschikbaar.</p>
+                      <p className="text-xs text-ink-500">Live containerstatistieken niet beschikbaar.</p>
                     )}
 
                     {auxiliary_containers && auxiliary_containers.length > 0 && (
-                      <div className="pt-2 border-t border-white/5">
-                        <span className="text-slate-400 text-[11px]">Ondersteunende containers:</span>
+                      <div className="pt-2 border-t border-ink-800">
+                        <span className="text-ink-400 text-[11px]">Ondersteunende containers:</span>
                         <div className="flex flex-wrap gap-1.5 mt-1">
                           {auxiliary_containers.map((aux) => (
-                            <span key={aux} className="px-2 py-0.5 rounded bg-white/5 text-[11px] text-slate-300 border border-white/5">
+                            <span key={aux} className="px-2 py-0.5 rounded bg-ink-900 text-[11px] text-ink-300 border border-ink-800">
                               {aux}
                             </span>
                           ))}
@@ -243,28 +243,28 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
 
               {/* Container Details & Ports */}
               {container_info && (
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-                  <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider">Docker Container Details</h4>
+                <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-800/80 space-y-3">
+                  <h4 className="text-xs font-mono text-ink-400 uppercase tracking-wider">Docker Container Details</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
                     <div>
-                      <span className="text-slate-500">Docker Image:</span>
-                      <p className="text-slate-200 break-all">{container_info.image}</p>
+                      <span className="text-ink-500">Docker Image:</span>
+                      <p className="text-ink-200 break-all">{container_info.image}</p>
                     </div>
                     <div>
-                      <span className="text-slate-500">Restart Policy:</span>
-                      <p className="text-slate-200">{container_info.restart_policy || 'N/A'}</p>
+                      <span className="text-ink-500">Restart Policy:</span>
+                      <p className="text-ink-200">{container_info.restart_policy || 'N/A'}</p>
                     </div>
                     <div className="sm:col-span-2">
-                      <span className="text-slate-500">Gekoppelde Poorten:</span>
+                      <span className="text-ink-500">Gekoppelde Poorten:</span>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {container_info.ports && container_info.ports.length > 0 ? (
                           container_info.ports.map((p, idx) => (
-                            <span key={idx} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                            <span key={idx} className="px-2 py-0.5 rounded bg-ink-900 text-gold-300 border border-gold-400/20">
                               {p}
                             </span>
                           ))
                         ) : (
-                          <span className="text-slate-500">Geen publieke poorten (intern netwerk)</span>
+                          <span className="text-ink-500">Geen publieke poorten (intern netwerk)</span>
                         )}
                       </div>
                     </div>
@@ -273,22 +273,22 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
               )}
 
               {/* Configuration Section */}
-              <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
-                <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider">Configuratiebeheer</h4>
-                <div className="flex items-center justify-between text-xs font-mono text-slate-300">
+              <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-800/80 space-y-2">
+                <h4 className="text-xs font-mono text-ink-400 uppercase tracking-wider">Configuratiebeheer</h4>
+                <div className="flex items-center justify-between text-xs font-mono text-ink-300">
                   <span>Configuratiebron:</span>
-                  <span className="text-slate-400">{config_source || 'Geen bestand'}</span>
+                  <span className="text-ink-400">{config_source || 'Geen bestand'}</span>
                 </div>
-                <div className="mt-2 text-xs text-slate-400 bg-black/20 p-2.5 rounded border border-white/5">
+                <div className="mt-2 text-xs text-ink-400 bg-ink-900 p-2.5 rounded border border-ink-800">
                   {configurable ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300">
+                      <span className="text-ink-300 font-sans">
                         Deze service beschikt over een officiële runtime API / admin surface.
                       </span>
                       {ui_url && (
                         <button
                           onClick={() => window.open(ui_url, '_blank')}
-                          className="text-[#ffd166] hover:underline flex items-center gap-1"
+                          className="text-gold-300 hover:underline flex items-center gap-1 font-mono text-xs"
                         >
                           <span>Open configuratie</span>
                           <ExternalLink className="w-3 h-3" />
@@ -296,7 +296,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                       )}
                     </div>
                   ) : (
-                    <p className="italic text-slate-500">
+                    <p className="italic text-ink-500 font-sans">
                       Configuratie is extern beheerd (via Docker Compose / .env). Wijzigingen worden beschermd en verlopen via het server-reproductieproces.
                     </p>
                   )}
@@ -307,7 +307,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
             /* Logs Tab */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-ink-400">
                   Laatste 60 regels van {container}:
                 </span>
                 <button
@@ -319,15 +319,15 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                 </button>
               </div>
 
-              <div className="bg-[#05080f] p-4 rounded-xl border border-white/10 font-mono text-xs text-slate-300 overflow-x-auto max-h-[50vh] whitespace-pre-wrap leading-relaxed">
+              <div className="bg-ink-950 p-4 rounded-xl border border-ink-800 font-mono text-xs text-ink-300 overflow-x-auto max-h-[50vh] whitespace-pre-wrap leading-relaxed">
                 {loadingLogs ? (
-                  <div className="flex items-center justify-center p-8 text-slate-500 animate-pulse">
+                  <div className="flex items-center justify-center p-8 text-ink-500 animate-pulse">
                     Logs laden...
                   </div>
                 ) : logs ? (
                   logs
                 ) : (
-                  <span className="text-slate-600">Geen logs beschikbaar voor deze container.</span>
+                  <span className="text-ink-600">Geen logs beschikbaar voor deze container.</span>
                 )}
               </div>
             </div>
@@ -335,7 +335,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-[#090e1a]/80 flex items-center justify-between">
+        <div className="p-4 border-t border-ink-800 bg-ink-950/80 flex items-center justify-between">
           <button onClick={onClose} className="btn-ghost text-xs">
             Sluiten
           </button>
@@ -343,7 +343,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           {container && (
             <button
               onClick={() => onOpenFullLogs(container)}
-              className="btn-ghost text-xs text-[#ffd166] border-[#e6b450]/30 hover:bg-[#e6b450]/10"
+              className="btn-ghost text-xs text-gold-300 border-gold-400/30 hover:bg-gold-500/10"
             >
               <Terminal className="w-3.5 h-3.5" />
               <span>Inspecteer Container Logs</span>
