@@ -5,7 +5,7 @@ import { GaiaComponentCard } from './components/GaiaComponentCard';
 import { ComponentDetailModal } from './components/ComponentDetailModal';
 import { ContainerTable } from './components/ContainerTable';
 import { LogsModal } from './components/LogsModal';
-import { LoginModal } from './components/LoginModal';
+import { LoginPage } from './components/LoginPage';
 import { api } from './services/api';
 import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from './types';
 import { ExternalLink, Layers, Box, Activity, AlertCircle } from 'lucide-react';
@@ -22,7 +22,6 @@ export const App: React.FC = () => {
   // Modals state
   const [selectedComponent, setSelectedComponent] = useState<GaiaComponent | null>(null);
   const [logContainer, setLogContainer] = useState<string | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
   // Fetch all data
   const fetchData = useCallback(async (isManual: boolean = false) => {
@@ -35,11 +34,9 @@ export const App: React.FC = () => {
       setAuthStatus(auth);
 
       if (auth.auth_enabled && !auth.authenticated) {
-        setShowLoginModal(true);
         if (isManual) setIsRefreshing(false);
         return;
       }
-      setShowLoginModal(false);
 
       // 2. Fetch system, components and containers in parallel
       const [sys, comps, conts] = await Promise.all([
@@ -59,7 +56,7 @@ export const App: React.FC = () => {
       }
     } catch (err: any) {
       if (err.message === 'UNAUTHORIZED') {
-        setShowLoginModal(true);
+        setAuthStatus({ authenticated: false, username: null, auth_enabled: true });
       } else {
         setError(err.message || 'Fout bij communicatie met Gaia Control Center backend');
       }
@@ -78,15 +75,30 @@ export const App: React.FC = () => {
   }, []);
 
   const handleLoginSuccess = () => {
-    setShowLoginModal(false);
     fetchData(true);
   };
 
   const handleLogout = async () => {
     await api.logout();
     setAuthStatus({ authenticated: false, username: null, auth_enabled: true });
-    setShowLoginModal(true);
   };
+
+  if (authStatus === null) {
+    return (
+      <div className="min-h-screen w-full bg-[#060911] flex flex-col items-center justify-center font-mono select-none">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#997321] via-[#e6b450] to-[#ffd166] flex items-center justify-center shadow-xl shadow-[#e6b450]/20 mb-4 animate-pulse">
+          <div className="w-6 h-6 rounded-full bg-[#080d19] flex items-center justify-center">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#ffd166] status-orb-running" />
+          </div>
+        </div>
+        <p className="text-xs text-slate-400 tracking-wider">GAIA CONTROL CENTER &bull; INITIALISEREN...</p>
+      </div>
+    );
+  }
+
+  if (authStatus.auth_enabled && !authStatus.authenticated) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   const runningComponentsCount = components.filter(
     (c) => c.composite_status === 'running' || c.composite_status === 'ok'
@@ -318,12 +330,6 @@ export const App: React.FC = () => {
       <LogsModal
         containerName={logContainer}
         onClose={() => setLogContainer(null)}
-      />
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onLoginSuccess={handleLoginSuccess}
       />
     </div>
   );
