@@ -118,3 +118,34 @@ export interface AuthStatus {
   username: string | null;
   auth_enabled: boolean;
 }
+
+export interface LogIssue {
+  container: string;
+  component_id?: string | null;
+  component_name?: string | null;
+  is_gaia: boolean;
+  severity: 'critical' | 'warning' | 'info';
+  category: 'database' | 'runtime_crash' | 'llm_quota' | 'memory' | 'timeout' | 'security' | 'http_error' | string;
+  title: string;
+  suggestion: string;
+  snippet: string;
+  matched_line: string;
+  line_number: number;
+  timestamp: string;
+  count: number;
+  last_seen?: string;
+}
+
+export interface LogAnalysisReport {
+  summary: {
+    health_score: number;
+    total_issues: number;
+    critical_count: number;
+    warning_count: number;
+    scanned_containers_count: number;
+    timestamp: string;
+  };
+  scanned_containers: string[];
+  issues: LogIssue[];
+}
+

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Activity, RefreshCw, LogOut, Server, Layers, Box, Shield, Settings } from 'lucide-react';
+import { Activity, RefreshCw, LogOut, Server, Layers, Box, Shield, Settings, FileSearch } from 'lucide-react';
 import { AuthStatus, SystemMetrics } from '../types';
 
 interface NavbarProps {
-  activeTab: 'overview' | 'components' | 'containers' | 'settings';
-  onTabChange: (tab: 'overview' | 'components' | 'containers' | 'settings') => void;
+  activeTab: 'overview' | 'components' | 'containers' | 'settings' | 'logs';
+  onTabChange: (tab: 'overview' | 'components' | 'containers' | 'settings' | 'logs') => void;
   systemMetrics: SystemMetrics | null;
   authStatus: AuthStatus | null;
   onRefresh: () => void;
@@ -89,6 +89,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Box className="w-3.5 h-3.5" />
               Infrastructuur
+            </button>
+            <button
+              onClick={() => onTabChange('logs')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                activeTab === 'logs'
+                  ? 'bg-ink-800 text-gold-300 shadow-sm border border-gold-400/20'
+                  : 'text-ink-400 hover:text-ink-200 hover:bg-ink-800/50'
+              }`}
+            >
+              <FileSearch className="w-3.5 h-3.5" />
+              Log Analyzer
             </button>
             <button
               onClick={() => onTabChange('settings')}

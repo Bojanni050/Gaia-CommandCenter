@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport } from '../types';
 
 const API_BASE = '/api';
 
@@ -135,9 +135,17 @@ class ApiService {
     return this.request<ContainerInfo>(`/containers/${nameOrId}`);
   }
 
-  // Logs
+  // Logs & Analyzer
   async getLogs(nameOrId: string, tail: number = 150, timestamps: boolean = true): Promise<{ container: string; tail: number; logs: string }> {
     return this.request(`/logs/${encodeURIComponent(nameOrId)}?tail=${tail}&timestamps=${timestamps}`);
+  }
+
+  async analyzeLogs(tail: number = 250): Promise<LogAnalysisReport> {
+    return this.request<LogAnalysisReport>(`/logs/analyze?tail=${tail}`);
+  }
+
+  async analyzeContainerLogs(nameOrId: string, tail: number = 250): Promise<LogIssue[]> {
+    return this.request<LogIssue[]>(`/logs/analyze/${encodeURIComponent(nameOrId)}?tail=${tail}`);
   }
 }
 
