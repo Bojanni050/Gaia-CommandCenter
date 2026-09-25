@@ -110,11 +110,16 @@ Het Control Center is volledig gecontaineriseerd via een multi-stage Dockerfile 
 Voer de volgende commando's uit op de VPS (bijvoorbeeld via SSH als root):
 
 ```bash
-# 1. Navigeer naar /opt (of gewenste directory)
+# 1. Navigeer naar /opt (of een gewenste directory)
 cd /opt
 
 # 2. Clone de repository vanaf GitHub
+# Optie A: Via HTTPS (voor een private repository gebruik je een GitHub Personal Access Token als wachtwoord)
 git clone https://github.com/Bojanni050/Gaia-CommandCenter.git gaia-control-center
+
+# Optie B: Via SSH (als er een SSH deploy key aan het GitHub project is toegevoegd)
+# git clone git@github.com:Bojanni050/Gaia-CommandCenter.git gaia-control-center
+
 cd gaia-control-center
 
 # 3. Maak het omgevingsbestand aan
