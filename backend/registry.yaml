@@ -22,7 +22,7 @@ components:
     auxiliary_containers:
       - "gaia-hermes-proxy"
     health_endpoint: "http://127.0.0.1:8643/v1/models"
-    ui_url: "http://127.0.0.1:9119"
+    ui_url: "http://100.65.0.15:9119"
     ui_label: "Open Hermes Dashboard"
     config_source: "/root/hermes-agent/.env"
     configurable: false
