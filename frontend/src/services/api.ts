@@ -136,16 +136,23 @@ class ApiService {
   }
 
   // Logs & Analyzer
-  async getLogs(nameOrId: string, tail: number = 150, timestamps: boolean = true): Promise<{ container: string; tail: number; logs: string }> {
-    return this.request(`/logs/${encodeURIComponent(nameOrId)}?tail=${tail}&timestamps=${timestamps}`);
+  async getLogs(
+    nameOrId: string,
+    tail: number = 20,
+    timestamps: boolean = true,
+    sinceHours: number = 25
+  ): Promise<{ container: string; tail: number; since_hours?: number; logs: string }> {
+    return this.request(
+      `/logs/${encodeURIComponent(nameOrId)}?tail=${tail}&timestamps=${timestamps}&since_hours=${sinceHours}`
+    );
   }
 
-  async analyzeLogs(tail: number = 250): Promise<LogAnalysisReport> {
-    return this.request<LogAnalysisReport>(`/logs/analyze?tail=${tail}`);
+  async analyzeLogs(tail: number = 20, sinceHours: number = 25): Promise<LogAnalysisReport> {
+    return this.request<LogAnalysisReport>(`/logs/analyze?tail=${tail}&since_hours=${sinceHours}`);
   }
 
-  async analyzeContainerLogs(nameOrId: string, tail: number = 250): Promise<LogIssue[]> {
-    return this.request<LogIssue[]>(`/logs/analyze/${encodeURIComponent(nameOrId)}?tail=${tail}`);
+  async analyzeContainerLogs(nameOrId: string, tail: number = 20, sinceHours: number = 25): Promise<LogIssue[]> {
+    return this.request<LogIssue[]>(`/logs/analyze/${encodeURIComponent(nameOrId)}?tail=${tail}&since_hours=${sinceHours}`);
   }
 }
 

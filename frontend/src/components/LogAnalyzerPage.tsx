@@ -28,7 +28,12 @@ export const LogAnalyzerPage: React.FC<LogAnalyzerPageProps> = ({
   const [report, setReport] = useState<LogAnalysisReport | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [tail, setTail] = useState<number>(250);
+  const [tail, setTail] = useState<number>(20);
+  const [sinceHours, setSinceHours] = useState<number>(25);
+  const [customTail, setCustomTail] = useState<string>('20');
+  const [customHours, setCustomHours] = useState<string>('25');
+  const [isCustomTail, setIsCustomTail] = useState<boolean>(false);
+  const [isCustomHours, setIsCustomHours] = useState<boolean>(false);
   const [selectedSeverity, setSelectedSeverity] = useState<'all' | 'critical' | 'warning'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedContainer, setSelectedContainer] = useState<string>('all');
@@ -38,7 +43,7 @@ export const LogAnalyzerPage: React.FC<LogAnalyzerPageProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const data = await api.analyzeLogs(tail);
+      const data = await api.analyzeLogs(tail, sinceHours);
       setReport(data);
     } catch (err: any) {
       setError(err.message || 'Fout bij analyseren van container logs.');
@@ -49,7 +54,7 @@ export const LogAnalyzerPage: React.FC<LogAnalyzerPageProps> = ({
 
   useEffect(() => {
     runAnalysis();
-  }, [tail]);
+  }, [tail, sinceHours]);
 
   const issues = report?.issues || [];
 
@@ -106,19 +111,133 @@ export const LogAnalyzerPage: React.FC<LogAnalyzerPageProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3 w-full sm:w-auto relative z-10">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto relative z-10">
+          {/* Periode Selector */}
           <div className="flex items-center gap-1.5 bg-ink-900 border border-ink-800 rounded-lg px-2.5 py-1.5 text-xs text-ink-300 font-mono">
-            <span>Diepte:</span>
-            <select
-              value={tail}
-              onChange={(e) => setTail(Number(e.target.value))}
-              className="bg-transparent text-gold-300 font-mono focus:outline-none cursor-pointer"
-            >
-              <option value={100} className="bg-ink-900">100 regels</option>
-              <option value={250} className="bg-ink-900">250 regels</option>
-              <option value={500} className="bg-ink-900">500 regels</option>
-              <option value={1000} className="bg-ink-900">1000 regels</option>
-            </select>
+            <Clock className="w-3.5 h-3.5 text-gold-400" />
+            <span className="text-ink-400">Periode:</span>
+            {!isCustomHours ? (
+              <select
+                value={sinceHours}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    setIsCustomHours(true);
+                  } else {
+                    setSinceHours(Number(e.target.value));
+                  }
+                }}
+                className="bg-transparent text-gold-300 font-mono focus:outline-none cursor-pointer"
+              >
+                <option value={1} className="bg-ink-900">Laatste 1 uur</option>
+                <option value={6} className="bg-ink-900">Laatste 6 uur</option>
+                <option value={12} className="bg-ink-900">Laatste 12 uur</option>
+                <option value={24} className="bg-ink-900">Laatste 24 uur</option>
+                <option value={25} className="bg-ink-900">Laatste 25 uur (Standaard)</option>
+                <option value={48} className="bg-ink-900">Laatste 48 uur</option>
+                <option value={168} className="bg-ink-900">Laatste 7 dagen</option>
+                <option value={0} className="bg-ink-900">Alles (geen limiet)</option>
+                <option value="custom" className="bg-ink-900">Aangepast...</option>
+              </select>
+            ) : (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="0.5"
+                  max="8760"
+                  step="0.5"
+                  value={customHours}
+                  onChange={(e) => setCustomHours(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = parseFloat(customHours);
+                      if (!isNaN(val) && val >= 0) setSinceHours(val);
+                    }
+                  }}
+                  className="w-14 bg-ink-950 border border-ink-700 rounded px-1.5 py-0.5 text-gold-300 font-mono text-xs focus:outline-none focus:border-gold-400"
+                />
+                <span className="text-ink-400 text-[10px]">u</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const val = parseFloat(customHours);
+                    if (!isNaN(val) && val >= 0) setSinceHours(val);
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-ink-800 hover:bg-gold-500/20 text-gold-300 text-[10px]"
+                >
+                  OK
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomHours(false)}
+                  className="text-ink-500 hover:text-ink-300 text-[10px]"
+                  title="Terug naar standaard keuzemenu"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Rows / Tail Selector */}
+          <div className="flex items-center gap-1.5 bg-ink-900 border border-ink-800 rounded-lg px-2.5 py-1.5 text-xs text-ink-300 font-mono">
+            <Layers className="w-3.5 h-3.5 text-gold-400" />
+            <span className="text-ink-400">Rijen:</span>
+            {!isCustomTail ? (
+              <select
+                value={tail}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    setIsCustomTail(true);
+                  } else {
+                    setTail(Number(e.target.value));
+                  }
+                }}
+                className="bg-transparent text-gold-300 font-mono focus:outline-none cursor-pointer"
+              >
+                <option value={20} className="bg-ink-900">20 rijen (Standaard)</option>
+                <option value={50} className="bg-ink-900">50 rijen</option>
+                <option value={100} className="bg-ink-900">100 rijen</option>
+                <option value={250} className="bg-ink-900">250 rijen</option>
+                <option value={500} className="bg-ink-900">500 rijen</option>
+                <option value={1000} className="bg-ink-900">1000 rijen</option>
+                <option value="custom" className="bg-ink-900">Aangepast...</option>
+              </select>
+            ) : (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="5"
+                  max="10000"
+                  value={customTail}
+                  onChange={(e) => setCustomTail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = parseInt(customTail, 10);
+                      if (!isNaN(val) && val > 0) setTail(val);
+                    }
+                  }}
+                  className="w-14 bg-ink-950 border border-ink-700 rounded px-1.5 py-0.5 text-gold-300 font-mono text-xs focus:outline-none focus:border-gold-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const val = parseInt(customTail, 10);
+                    if (!isNaN(val) && val > 0) setTail(val);
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-ink-800 hover:bg-gold-500/20 text-gold-300 text-[10px]"
+                >
+                  OK
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTail(false)}
+                  className="text-ink-500 hover:text-ink-300 text-[10px]"
+                  title="Terug naar standaard keuzemenu"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
           </div>
 
           <button
@@ -243,9 +362,14 @@ export const LogAnalyzerPage: React.FC<LogAnalyzerPageProps> = ({
               Draaiend op VPS
             </span>
           </div>
-          <p className="text-[11px] font-mono text-ink-500 mt-2 flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span>
+          <p className="text-[11px] font-mono text-ink-400 mt-2 flex items-center justify-between">
+            <span className="flex items-center gap-1 text-gold-300">
+              <Clock className="w-3 h-3 text-gold-400" />
+              <span>{sinceHours === 0 ? 'Alles' : `${sinceHours}u`}</span>
+              <span className="text-ink-600">&bull;</span>
+              <span>{tail} rijen</span>
+            </span>
+            <span className="text-ink-500">
               {report?.summary.timestamp
                 ? new Date(report.summary.timestamp).toLocaleTimeString('nl-NL')
                 : 'Zojuist'}

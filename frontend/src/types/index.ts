@@ -143,6 +143,8 @@ export interface LogAnalysisReport {
     critical_count: number;
     warning_count: number;
     scanned_containers_count: number;
+    tail?: number;
+    since_hours?: number;
     timestamp: string;
   };
   scanned_containers: string[];

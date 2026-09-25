@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, Copy, Check, Terminal, ArrowDown } from 'lucide-react';
+import { X, RefreshCw, Copy, Check, Terminal, ArrowDown, Clock } from 'lucide-react';
 import { api } from '../services/api';
 
 interface LogsModalProps {
@@ -10,7 +10,8 @@ interface LogsModalProps {
 export const LogsModal: React.FC<LogsModalProps> = ({ containerName, onClose }) => {
   const [logs, setLogs] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [tail, setTail] = useState<number>(150);
+  const [tail, setTail] = useState<number>(20);
+  const [sinceHours, setSinceHours] = useState<number>(25);
   const [timestamps, setTimestamps] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
@@ -21,7 +22,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ containerName, onClose }) 
   const fetchLogs = () => {
     if (!containerName) return;
     setLoading(true);
-    api.getLogs(containerName, tail, timestamps)
+    api.getLogs(containerName, tail, timestamps, sinceHours)
       .then((data) => {
         setLogs(data.logs);
       })
@@ -35,7 +36,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ containerName, onClose }) 
 
   useEffect(() => {
     fetchLogs();
-  }, [containerName, tail, timestamps]);
+  }, [containerName, tail, timestamps, sinceHours]);
 
   useEffect(() => {
     if (autoScroll && logsEndRef.current) {
@@ -92,17 +93,39 @@ export const LogsModal: React.FC<LogsModalProps> = ({ containerName, onClose }) 
               className="bg-ink-950 border border-ink-800 rounded px-2.5 py-1 text-xs text-ink-200 placeholder-ink-600 focus:outline-none focus:border-gold-400/40 font-mono w-32 sm:w-44"
             />
 
+            {/* Periode selector */}
+            <div className="flex items-center gap-1 bg-ink-950 border border-ink-800 rounded px-2 py-1 text-xs text-ink-300 font-mono">
+              <Clock className="w-3 h-3 text-gold-400" />
+              <select
+                value={sinceHours}
+                onChange={(e) => setSinceHours(Number(e.target.value))}
+                className="bg-transparent text-gold-300 font-mono focus:outline-none cursor-pointer"
+                title="Periode van logs"
+              >
+                <option value={1} className="bg-ink-900">1 uur</option>
+                <option value={6} className="bg-ink-900">6 uur</option>
+                <option value={12} className="bg-ink-900">12 uur</option>
+                <option value={24} className="bg-ink-900">24 uur</option>
+                <option value={25} className="bg-ink-900">25 uur (Std)</option>
+                <option value={48} className="bg-ink-900">48 uur</option>
+                <option value={168} className="bg-ink-900">7 dagen</option>
+                <option value={0} className="bg-ink-900">Alles</option>
+              </select>
+            </div>
+
             {/* Tail lines selector */}
             <select
               value={tail}
               onChange={(e) => setTail(Number(e.target.value))}
-              className="bg-ink-950 border border-ink-800 rounded px-2 py-1 text-xs text-ink-300 font-mono focus:outline-none"
+              className="bg-ink-950 border border-ink-800 rounded px-2 py-1 text-xs text-ink-300 font-mono focus:outline-none cursor-pointer"
+              title="Aantal regels"
             >
-              <option value={50}>50 regels</option>
-              <option value={150}>150 regels</option>
-              <option value={300}>300 regels</option>
-              <option value={500}>500 regels</option>
-              <option value={1000}>1000 regels</option>
+              <option value={20} className="bg-ink-900">20 regels (Std)</option>
+              <option value={50} className="bg-ink-900">50 regels</option>
+              <option value={100} className="bg-ink-900">100 regels</option>
+              <option value={250} className="bg-ink-900">250 regels</option>
+              <option value={500} className="bg-ink-900">500 regels</option>
+              <option value={1000} className="bg-ink-900">1000 regels</option>
             </select>
 
             {/* Timestamps toggle */}

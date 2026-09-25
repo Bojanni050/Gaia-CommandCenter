@@ -78,7 +78,8 @@ class LogAnalyzer:
     def analyze_container_logs(
         self,
         container_name: str,
-        tail: int = 250,
+        tail: int = 20,
+        since_hours: Optional[float] = 25.0,
         mapping: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """Scan logs of a single container against known diagnostic patterns."""
@@ -91,7 +92,16 @@ class LogAnalyzer:
             "is_gaia": False,
         })
 
-        raw_logs = docker_service.get_container_logs(container_name, tail=tail, timestamps=True)
+        since_timestamp = None
+        if since_hours is not None and since_hours > 0:
+            since_timestamp = int(time.time() - (since_hours * 3600))
+
+        raw_logs = docker_service.get_container_logs(
+            container_name,
+            tail=tail,
+            timestamps=True,
+            since=since_timestamp
+        )
         if not raw_logs or "Docker daemon niet bereikbaar" in raw_logs:
             return []
 
@@ -146,7 +156,11 @@ class LogAnalyzer:
         results.sort(key=lambda x: (severity_weight.get(x["severity"], 3), -x["count"]))
         return results
 
-    def analyze_all_containers(self, tail: int = 250) -> Dict[str, Any]:
+    def analyze_all_containers(
+        self,
+        tail: int = 20,
+        since_hours: Optional[float] = 25.0
+    ) -> Dict[str, Any]:
         """Scan all running containers in parallel and compute system log health."""
         containers = docker_service.list_containers(all_containers=False)
         mapping = registry_manager.get_container_to_component_map()
@@ -156,7 +170,12 @@ class LogAnalyzer:
 
         def analyze_one(c_name):
             try:
-                return c_name, self.analyze_container_logs(c_name, tail=tail, mapping=mapping)
+                return c_name, self.analyze_container_logs(
+                    c_name,
+                    tail=tail,
+                    since_hours=since_hours,
+                    mapping=mapping
+                )
             except Exception as e:
                 return c_name, []
 
@@ -187,6 +206,8 @@ class LogAnalyzer:
                 "critical_count": critical_count,
                 "warning_count": warning_count,
                 "scanned_containers_count": len(scanned_containers),
+                "tail": tail,
+                "since_hours": since_hours,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
             "scanned_containers": scanned_containers,

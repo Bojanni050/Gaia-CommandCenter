@@ -4,7 +4,7 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 import docker
 from docker.errors import DockerException, NotFound
 
@@ -319,12 +319,31 @@ class DockerService:
                 "error": str(e)
             }
 
-    def get_container_logs(self, name_or_id: str, tail: int = 100, timestamps: bool = False) -> str:
+    def get_container_logs(
+        self,
+        name_or_id: str,
+        tail: Union[int, str] = 20,
+        timestamps: bool = False,
+        since: Optional[int] = None
+    ) -> str:
         if not self.is_available:
             return "Docker daemon niet bereikbaar."
         try:
             c = self._client.containers.get(name_or_id)
-            logs = c.logs(tail=tail, timestamps=timestamps, stdout=True, stderr=True)
+            kwargs: Dict[str, Any] = {
+                "timestamps": timestamps,
+                "stdout": True,
+                "stderr": True
+            }
+            if tail is not None and str(tail).lower() != "all" and int(tail) > 0:
+                kwargs["tail"] = int(tail)
+            elif str(tail).lower() == "all" or tail == 0:
+                kwargs["tail"] = "all"
+
+            if since is not None and since > 0:
+                kwargs["since"] = int(since)
+
+            logs = c.logs(**kwargs)
             return logs.decode("utf-8", errors="replace")
         except NotFound:
             return f"Container '{name_or_id}' niet gevonden."
