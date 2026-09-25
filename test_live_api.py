@@ -69,23 +69,35 @@ def test_api():
         for cont in conts:
             gaia_tag = f"GAIA: {cont['gaia_meta']['component_name']}" if cont['gaia_meta']['is_gaia'] else ("INFRA" if cont['gaia_meta'].get('is_infrastructure') else "OTHER")
             print(f"  [{cont['status'].upper()}] {cont['name']} ({cont['image']}) | {gaia_tag} | Ports: {', '.join(cont['ports'][:2])}")
-    # 6. Log Analyzer
+    # 6. Log Analyzer (Standard defaults: last 25 hours, 20 rows)
     req = urllib.request.Request(
-        "http://100.65.0.15:8899/api/logs/analyze?tail=200",
+        "http://100.65.0.15:8899/api/logs/analyze",
         headers={"Authorization": f"Bearer {token}"}
     )
     with urllib.request.urlopen(req) as res:
         analysis = json.loads(res.read().decode())
         summary = analysis['summary']
-        print(f"\nLog Analyzer Report:")
+        print(f"\nLog Analyzer Report (Standard Defaults: period={summary.get('since_hours')}h, rows={summary.get('tail')}):")
         print(f"  Health Score: {summary['health_score']}/100")
         print(f"  Scanned Containers: {summary['scanned_containers_count']} ({len(analysis['scanned_containers'])})")
         print(f"  Total Issues: {summary['total_issues']} (Critical: {summary['critical_count']}, Warnings: {summary['warning_count']})")
         print(f"\n  Top Detected Issues:")
-        for iss in analysis['issues'][:8]:
+        for iss in analysis['issues'][:6]:
             print(f"    - [{iss['severity'].upper()}] {iss['container']} ({iss['category']} / {iss['title']}):")
             print(f"      Regel: {iss['matched_line'][:90]}...")
             print(f"      Suggestie: {iss['suggestion'][:90]}...")
+
+    # 7. Log Analyzer (Custom: last 1 hour, 50 rows)
+    req_custom = urllib.request.Request(
+        "http://100.65.0.15:8899/api/logs/analyze?since_hours=1&tail=50",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    with urllib.request.urlopen(req_custom) as res:
+        analysis_custom = json.loads(res.read().decode())
+        summary_custom = analysis_custom['summary']
+        print(f"\nLog Analyzer Report (Custom: period={summary_custom.get('since_hours')}h, rows={summary_custom.get('tail')}):")
+        print(f"  Health Score: {summary_custom['health_score']}/100")
+        print(f"  Total Issues: {summary_custom['total_issues']} (Critical: {summary_custom['critical_count']}, Warnings: {summary_custom['warning_count']})")
 
 if __name__ == "__main__":
     test_api()
