@@ -1,5 +1,10 @@
+import os
 import urllib.request
 import json
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 def test_api():
     print("--- TESTING LIVE GAIA CONTROL CENTER (http://100.65.0.15:8899) ---")
@@ -9,7 +14,9 @@ def test_api():
         print("Health Endpoint:", res.read().decode())
 
     # 2. Login
-    login_data = json.dumps({"username": "admin", "password": "gaia2026"}).encode()
+    username = os.getenv("ADMIN_USERNAME", "Bojan")
+    password = os.getenv("ADMIN_PASSWORD", "P9jJXLxtOFj8YA")
+    login_data = json.dumps({"username": username, "password": password}).encode()
     req = urllib.request.Request(
         "http://100.65.0.15:8899/api/auth/login",
         data=login_data,
@@ -62,6 +69,23 @@ def test_api():
         for cont in conts:
             gaia_tag = f"GAIA: {cont['gaia_meta']['component_name']}" if cont['gaia_meta']['is_gaia'] else ("INFRA" if cont['gaia_meta'].get('is_infrastructure') else "OTHER")
             print(f"  [{cont['status'].upper()}] {cont['name']} ({cont['image']}) | {gaia_tag} | Ports: {', '.join(cont['ports'][:2])}")
+    # 6. Log Analyzer
+    req = urllib.request.Request(
+        "http://100.65.0.15:8899/api/logs/analyze?tail=200",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    with urllib.request.urlopen(req) as res:
+        analysis = json.loads(res.read().decode())
+        summary = analysis['summary']
+        print(f"\nLog Analyzer Report:")
+        print(f"  Health Score: {summary['health_score']}/100")
+        print(f"  Scanned Containers: {summary['scanned_containers_count']} ({len(analysis['scanned_containers'])})")
+        print(f"  Total Issues: {summary['total_issues']} (Critical: {summary['critical_count']}, Warnings: {summary['warning_count']})")
+        print(f"\n  Top Detected Issues:")
+        for iss in analysis['issues'][:8]:
+            print(f"    - [{iss['severity'].upper()}] {iss['container']} ({iss['category']} / {iss['title']}):")
+            print(f"      Regel: {iss['matched_line'][:90]}...")
+            print(f"      Suggestie: {iss['suggestion'][:90]}...")
 
 if __name__ == "__main__":
     test_api()
