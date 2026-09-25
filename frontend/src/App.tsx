@@ -6,12 +6,13 @@ import { ComponentDetailModal } from './components/ComponentDetailModal';
 import { ContainerTable } from './components/ContainerTable';
 import { LogsModal } from './components/LogsModal';
 import { LoginPage } from './components/LoginPage';
+import { SettingsPage } from './components/SettingsPage';
 import { api } from './services/api';
 import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from './types';
 import { ExternalLink, Layers, Box, Activity, AlertCircle, Compass } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers' | 'settings'>('overview');
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null);
   const [components, setComponents] = useState<GaiaComponent[]>([]);
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
@@ -337,6 +338,15 @@ export const App: React.FC = () => {
               }}
             />
           </div>
+        )}
+
+        {/* TAB 4: SETTINGS PAGE */}
+        {activeTab === 'settings' && (
+          <SettingsPage
+            components={components}
+            containers={containers}
+            onRefreshComponents={() => fetchData(true)}
+          />
         )}
       </main>
 

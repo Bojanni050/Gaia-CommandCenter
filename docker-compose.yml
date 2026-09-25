@@ -12,7 +12,7 @@ services:
       # Read-only Docker engine socket
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Allow updating registry without rebuilding image
-      - ./backend/registry.yaml:/app/registry.yaml:ro
+      - ./backend/registry.yaml:/app/registry.yaml
     environment:
       - PORT=8899
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}

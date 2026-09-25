@@ -88,6 +88,40 @@ class ApiService {
     return this.request<GaiaComponent>(`/components/${id}`);
   }
 
+  async updateComponent(id: string, data: Partial<GaiaComponent>): Promise<GaiaComponent> {
+    return this.request<GaiaComponent>(`/components/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createComponent(data: any): Promise<GaiaComponent> {
+    return this.request<GaiaComponent>('/components', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteComponent(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/components/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async testEndpoint(endpoint: string): Promise<{
+    endpoint: string;
+    status: string;
+    status_code?: number;
+    latency_ms: number;
+    response?: any;
+    error?: string;
+  }> {
+    return this.request('/components/test-endpoint', {
+      method: 'POST',
+      body: JSON.stringify({ endpoint }),
+    });
+  }
+
   async reloadRegistry(): Promise<void> {
     await this.request('/components/reload', { method: 'POST' });
   }

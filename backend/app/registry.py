@@ -1,4 +1,5 @@
 import asyncio
+import re
 import yaml
 import os
 import logging
@@ -37,6 +38,64 @@ class RegistryManager:
             if comp.get("id") == component_id:
                 return comp
         return None
+
+    def save_registry(self, raw_data: Dict[str, Any]):
+        path = settings.REGISTRY_PATH
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.safe_dump(raw_data, f, sort_keys=False, allow_unicode=True)
+            self._raw_registry = raw_data
+            logger.info(f"Registry saved successfully to {path}.")
+        except Exception as e:
+            logger.error(f"Failed to save registry to {path}: {e}")
+            raise e
+
+    def update_component_definition(self, component_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        components = self._raw_registry.get("components", [])
+        found_idx = -1
+        for idx, comp in enumerate(components):
+            if comp.get("id") == component_id:
+                found_idx = idx
+                break
+
+        if found_idx == -1:
+            return None
+
+        current = components[found_idx]
+        for k, v in updates.items():
+            if v is not None:
+                current[k] = v
+
+        components[found_idx] = current
+        self._raw_registry["components"] = components
+        self.save_registry(self._raw_registry)
+        return current
+
+    def create_component_definition(self, component: Dict[str, Any]) -> Dict[str, Any]:
+        components = self._raw_registry.setdefault("components", [])
+        comp_id = component.get("id")
+        if not comp_id:
+            comp_id = re.sub(r'[^a-zA-Z0-9_-]', '', component.get("name", "component").lower().replace(" ", "-"))
+            component["id"] = comp_id
+
+        existing = next((c for c in components if c.get("id") == comp_id), None)
+        if existing:
+            existing.update(component)
+        else:
+            components.append(component)
+
+        self.save_registry(self._raw_registry)
+        return component
+
+    def delete_component_definition(self, component_id: str) -> bool:
+        components = self._raw_registry.get("components", [])
+        initial_len = len(components)
+        components = [c for c in components if c.get("id") != component_id]
+        if len(components) < initial_len:
+            self._raw_registry["components"] = components
+            self.save_registry(self._raw_registry)
+            return True
+        return False
 
     def get_container_to_component_map(self) -> Dict[str, Dict[str, Any]]:
         """Maps container name -> { component_id, component_name, is_gaia, is_auxiliary }"""
