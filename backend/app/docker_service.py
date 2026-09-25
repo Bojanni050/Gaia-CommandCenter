@@ -1,5 +1,8 @@
 import os
 import re
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 from typing import Dict, List, Optional, Any
 import docker
@@ -31,6 +34,9 @@ def mask_sensitive_value(key: str, val: str) -> str:
 class DockerService:
     def __init__(self):
         self._client: Optional[docker.DockerClient] = None
+        self._stats_cache: Dict[str, Dict[str, Any]] = {}
+        self._stats_cache_time: float = 0.0
+        self._stats_lock = threading.Lock()
         self._init_client()
 
     def _init_client(self):
@@ -190,15 +196,9 @@ class DockerService:
             logger.error(f"Error fetching container {name_or_id}: {e}")
             return None
 
-    def get_container_stats(self, name_or_id: str) -> Dict[str, Any]:
-        """Fetch instantaneous CPU and RAM metrics for a container."""
-        if not self.is_available:
-            return {"cpu_percent": 0.0, "memory_usage": 0, "memory_limit": 0, "memory_percent": 0.0}
+    def _parse_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse raw Docker stats dictionary into clean percentages and byte counts."""
         try:
-            c = self._client.containers.get(name_or_id)
-            # stream=False returns a single snapshot dict
-            stats = c.stats(stream=False)
-            
             # CPU calculation
             cpu_stats = stats.get("cpu_stats", {})
             precpu_stats = stats.get("precpu_stats", {})
@@ -214,7 +214,6 @@ class DockerService:
             # Memory calculation
             mem_stats = stats.get("memory_stats", {})
             mem_usage = mem_stats.get("usage", 0)
-            # Docker includes cache in usage on Linux cgroup v1/v2, adjust if inactive_file exists
             stats_dict = mem_stats.get("stats", {})
             if "inactive_file" in stats_dict:
                 mem_usage = max(0, mem_usage - stats_dict["inactive_file"])
@@ -237,6 +236,80 @@ class DockerService:
                 "net_rx_bytes": rx_bytes,
                 "net_tx_bytes": tx_bytes
             }
+        except Exception as e:
+            return {
+                "cpu_percent": 0.0,
+                "memory_usage": 0,
+                "memory_limit": 0,
+                "memory_percent": 0.0,
+                "error": str(e)
+            }
+
+    def get_all_container_stats(self, force: bool = False) -> Dict[str, Dict[str, Any]]:
+        """Fetch stats for all running containers in parallel, cached for 10 seconds."""
+        if not self.is_available:
+            return {}
+        
+        now = time.time()
+        with self._stats_lock:
+            if not force and self._stats_cache and (now - self._stats_cache_time < 10):
+                return dict(self._stats_cache)
+
+        try:
+            running_containers = self._client.containers.list(filters={"status": "running"})
+            if not running_containers:
+                return {}
+
+            def fetch_single(c):
+                name = c.name.lstrip("/")
+                try:
+                    raw_stats = c.stats(stream=False)
+                    return name, self._parse_stats(raw_stats)
+                except Exception as e:
+                    return name, {
+                        "cpu_percent": 0.0,
+                        "memory_usage": 0,
+                        "memory_limit": 0,
+                        "memory_percent": 0.0,
+                        "error": str(e)
+                    }
+
+            new_cache = {}
+            with ThreadPoolExecutor(max_workers=min(12, len(running_containers) or 1)) as executor:
+                futures = {executor.submit(fetch_single, c): c for c in running_containers}
+                for f in as_completed(futures):
+                    try:
+                        name, parsed = f.result(timeout=5.0)
+                        new_cache[name] = parsed
+                    except Exception:
+                        pass
+
+            with self._stats_lock:
+                self._stats_cache = new_cache
+                self._stats_cache_time = time.time()
+
+            return new_cache
+        except Exception as e:
+            logger.error(f"Error fetching parallel container stats: {e}")
+            return dict(self._stats_cache)
+
+    def get_container_stats(self, name_or_id: str) -> Dict[str, Any]:
+        """Fetch instantaneous CPU and RAM metrics for a container using cache if fresh."""
+        clean_name = name_or_id.lstrip("/")
+        now = time.time()
+        with self._stats_lock:
+            if clean_name in self._stats_cache and (now - self._stats_cache_time < 12):
+                return self._stats_cache[clean_name]
+
+        if not self.is_available:
+            return {"cpu_percent": 0.0, "memory_usage": 0, "memory_limit": 0, "memory_percent": 0.0}
+        try:
+            c = self._client.containers.get(name_or_id)
+            stats = c.stats(stream=False)
+            parsed = self._parse_stats(stats)
+            with self._stats_lock:
+                self._stats_cache[clean_name] = parsed
+            return parsed
         except Exception as e:
             return {
                 "cpu_percent": 0.0,

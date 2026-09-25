@@ -20,7 +20,7 @@ class HealthChecker:
         headers = custom_headers or {}
         
         try:
-            async with httpx.AsyncClient(timeout=settings.HEALTH_CHECK_TIMEOUT_SECONDS, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=2.0, follow_redirects=True) as client:
                 resp = await client.get(endpoint_url, headers=headers)
                 latency_ms = round((time.perf_counter() - start_time) * 1000, 1)
                 
@@ -85,17 +85,11 @@ class HealthChecker:
         if not force and cached and (now - cached.get("_timestamp", 0) < 10):
             return cached.get("data")
 
-        async with self._lock:
-            # Recheck inside lock
-            cached = self._cache.get(endpoint_url)
-            if not force and cached and (now - cached.get("_timestamp", 0) < 10):
-                return cached.get("data")
-            
-            data = await self.check_endpoint(endpoint_url, custom_headers)
-            self._cache[endpoint_url] = {
-                "_timestamp": now,
-                "data": data
-            }
-            return data
+        data = await self.check_endpoint(endpoint_url, custom_headers)
+        self._cache[endpoint_url] = {
+            "_timestamp": time.time(),
+            "data": data
+        }
+        return data
 
 health_checker = HealthChecker()

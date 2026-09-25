@@ -1,3 +1,4 @@
+import asyncio
 import yaml
 import os
 import logging
@@ -70,28 +71,54 @@ class RegistryManager:
         return mapping
 
     async def get_enriched_components(self) -> List[Dict[str, Any]]:
-        """Enriches static component definitions with live Docker stats and health checks."""
+        """Enriches static component definitions with live Docker stats and parallel health checks."""
         containers_list = docker_service.list_containers(all_containers=True)
         containers_by_name = {c["name"]: c for c in containers_list}
+        all_stats = docker_service.get_all_container_stats()
         
+        components_def = self._raw_registry.get("components", [])
+
+        # Gather all health checks concurrently
+        async def fetch_health(endpoint: str):
+            try:
+                return await health_checker.get_or_check(endpoint)
+            except Exception as e:
+                return {
+                    "endpoint": endpoint,
+                    "status": "down",
+                    "status_code": None,
+                    "latency_ms": 0,
+                    "response": None,
+                    "error": str(e)
+                }
+
+        endpoints_map = {
+            comp["id"]: comp["health_endpoint"]
+            for comp in components_def
+            if comp.get("health_endpoint")
+        }
+
+        # Run all health checks in parallel
+        results = await asyncio.gather(
+            *[fetch_health(ep) for ep in endpoints_map.values()],
+            return_exceptions=True
+        )
+
+        health_by_id = {}
+        for (comp_id, _), res in zip(endpoints_map.items(), results):
+            if isinstance(res, dict):
+                health_by_id[comp_id] = res
+
         enriched = []
-        for comp in self._raw_registry.get("components", []):
+        for comp in components_def:
             c_name = comp.get("container")
             c_data = containers_by_name.get(c_name) if c_name else None
             
-            # Fetch container stats if container is running
-            stats = None
-            if c_name and c_data and c_data.get("raw_status") == "running":
-                stats = docker_service.get_container_stats(c_name)
-
-            # Health Check
-            health_res = None
-            endpoint = comp.get("health_endpoint")
-            if endpoint:
-                health_res = await health_checker.get_or_check(endpoint)
+            # Instant lookup from cached stats
+            stats = all_stats.get(c_name) if (c_name and c_data and c_data.get("raw_status") == "running") else None
+            health_res = health_by_id.get(comp.get("id"))
 
             # Determine composite status
-            # Running, Stopped, Unhealthy, Starting, Unknown
             composite_status = "unknown"
             
             if comp.get("runtime") == "pm2":

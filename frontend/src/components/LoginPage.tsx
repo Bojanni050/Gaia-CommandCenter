@@ -17,7 +17,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState(() => localStorage.getItem('gaia_last_user') || 'Bojan');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [capsLockActive, setCapsLockActive] = useState(false);
@@ -45,6 +45,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     try {
       const res = await api.login(password, username);
+      localStorage.setItem('gaia_last_user', username);
       onLoginSuccess(res.username);
     } catch (err: any) {
       if (err.message === 'UNAUTHORIZED') {

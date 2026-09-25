@@ -38,21 +38,35 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 2. Fetch system, components and containers in parallel
-      const [sys, comps, conts] = await Promise.all([
+      // 2. Fetch system, components and containers independently with Promise.allSettled
+      const [sysRes, compsRes, contsRes] = await Promise.allSettled([
         api.getSystemMetrics(),
         api.getComponents(),
         api.getContainers(),
       ]);
 
-      setSystemMetrics(sys);
-      setComponents(comps);
-      setContainers(conts);
+      if (sysRes.status === 'fulfilled') {
+        setSystemMetrics(sysRes.value);
+      } else if (sysRes.reason?.message === 'UNAUTHORIZED') {
+        setAuthStatus({ authenticated: false, username: null, auth_enabled: true });
+        return;
+      }
 
-      // Update selected component if modal is open
-      if (selectedComponent) {
-        const updated = comps.find((c) => c.id === selectedComponent.id);
-        if (updated) setSelectedComponent(updated);
+      if (compsRes.status === 'fulfilled') {
+        setComponents(compsRes.value);
+        if (selectedComponent) {
+          const updated = compsRes.value.find((c) => c.id === selectedComponent.id);
+          if (updated) setSelectedComponent(updated);
+        }
+      }
+
+      if (contsRes.status === 'fulfilled') {
+        setContainers(contsRes.value);
+      }
+
+      // If all failed, show error
+      if (sysRes.status === 'rejected' && compsRes.status === 'rejected' && contsRes.status === 'rejected') {
+        setError('Kon gegevens niet ophalen van Gaia backend.');
       }
     } catch (err: any) {
       if (err.message === 'UNAUTHORIZED') {

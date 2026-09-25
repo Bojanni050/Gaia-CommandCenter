@@ -11,6 +11,8 @@ async def list_containers(current_user: str = Depends(get_current_user)):
     containers = docker_service.list_containers(all_containers=True)
     mapping = registry_manager.get_container_to_component_map()
 
+    all_stats = docker_service.get_all_container_stats()
+
     enriched_containers = []
     for c in containers:
         name = c["name"]
@@ -22,10 +24,8 @@ async def list_containers(current_user: str = Depends(get_current_user)):
             "is_infrastructure": False
         })
         
-        # Get live stats for running containers
-        stats = None
-        if c.get("raw_status") == "running":
-            stats = docker_service.get_container_stats(name)
+        # Get live stats for running containers from cached batch
+        stats = all_stats.get(name) if c.get("raw_status") == "running" else None
 
         enriched_containers.append({
             **c,
