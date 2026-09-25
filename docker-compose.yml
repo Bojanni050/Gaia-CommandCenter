@@ -1,0 +1,26 @@
+services:
+  gaia-control-center:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gaia-control-center
+    restart: unless-stopped
+    # network_mode: host allows direct communication with local health endpoints
+    # (127.0.0.1:8643, 127.0.0.1:9119) and the Tailscale IP (100.65.0.15) on Ubuntu Linux
+    network_mode: host
+    volumes:
+      # Read-only Docker engine socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Allow updating registry without rebuilding image
+      - ./backend/registry.yaml:/app/registry.yaml:ro
+    environment:
+      - PORT=8899
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-gaia2026}
+      - SECRET_KEY=${SECRET_KEY:-gaia-super-secret-command-center-token}
+      - DOCKER_SOCKET_PATH=/var/run/docker.sock
+      - REGISTRY_PATH=/app/registry.yaml
+      - TAILSCALE_HOST=100.65.0.15
+    env_file:
+      - path: .env
+        required: false

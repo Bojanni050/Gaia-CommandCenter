@@ -1,0 +1,128 @@
+version: "1.0"
+
+# GAIA LOGICAL COMPONENTS
+# Deze lijst definieert de daadwerkelijke Gaia architectuurcomponenten
+components:
+  - id: "core"
+    name: "Gaia API / Core"
+    category: "core"
+    description: "Centraal zenuwstelsel: SOUL, Decision Engine, Response Engine en multi-client orchestration"
+    container: "gaia-api"
+    health_endpoint: "http://100.65.0.15:8891/health"
+    ui_url: "http://100.65.0.15:8891/admin"
+    ui_label: "Open Gaia Admin"
+    config_source: "/root/gaia/services/gaia-api/.env"
+    configurable: true
+
+  - id: "hermes"
+    name: "Hermes Agent"
+    category: "reasoning"
+    description: "Autonome reasoning engine capability en model gateway (Nous Research)"
+    container: "hermes"
+    auxiliary_containers:
+      - "gaia-hermes-proxy"
+    health_endpoint: "http://127.0.0.1:8643/v1/models"
+    ui_url: "http://127.0.0.1:9119"
+    ui_label: "Open Hermes Dashboard"
+    config_source: "/root/hermes-agent/.env"
+    configurable: false
+
+  - id: "hindsight"
+    name: "Hindsight"
+    category: "memory"
+    description: "Long-term reflectief en episodisch geheugen voor Gaia (bank 'bojan')"
+    container: "hindsight"
+    health_endpoint: "http://100.65.0.15:8888/health"
+    ui_url: "http://100.65.0.15:9999/dashboard"
+    ui_label: "Open Hindsight UI"
+    config_source: "/opt/hindsight/.env"
+    configurable: false
+
+  - id: "chronicle"
+    name: "Chronicle / Foundation"
+    category: "knowledge"
+    description: "Epistemisch geheugen, actieve ingest, embeddings en consolidator"
+    runtime: "pm2"
+    process_name: "chronicle"
+    container: "chronicle-db"
+    health_endpoint: "http://100.65.0.15:4577/api/settings/status"
+    ui_url: "http://100.65.0.15:4577/ui/"
+    ui_label: "Open Chronicle UI"
+    config_source: "/opt/Foundation/.env"
+    configurable: false
+
+  - id: "cognition"
+    name: "ReasonIQ / Cognition"
+    category: "cognition"
+    description: "Hypothese-lifecycle (propose → test → confirm) en patroonherkenning"
+    container: "gaia-cognition"
+    auxiliary_containers:
+      - "gaia-cognition-db"
+    health_endpoint: "http://100.65.0.15:8890/health"
+    config_source: "/opt/gaia-cognition/.env"
+    configurable: false
+
+  - id: "intentiq"
+    name: "IntentIQ"
+    category: "intent"
+    description: "Intent understanding: tweetraps heuristische & semantische classificatie (gehost in Gaia Core)"
+    host_component: "core"
+    ui_url: "http://100.65.0.15:8891/admin"
+    ui_label: "IntentIQ Instellingen"
+    config_source: "/root/gaia/services/gaia-api/data/intentiq-config.json"
+    configurable: true
+
+  - id: "mcp"
+    name: "MCP Server"
+    category: "integration"
+    description: "Model Context Protocol interface over Chronicle epistemisch geheugen"
+    host_component: "chronicle"
+    config_source: "/opt/Foundation/server/mcpServer.js"
+    configurable: false
+
+  - id: "web"
+    name: "Gaia Web"
+    category: "interface"
+    description: "Officiële web-interface voor de dagelijkse conversational presence"
+    container: "gaia-web"
+    health_endpoint: "http://127.0.0.1:8090"
+    ui_url: "https://higaia.nl"
+    ui_label: "Open Gaia Web"
+    config_source: "environment"
+    configurable: false
+
+# INFRASTRUCTURE SERVICES
+# Ondersteunende containers en datastores die geen logische Gaia-agent zijn
+infrastructure:
+  - id: "public-proxy"
+    name: "Public HTTPS Ingress (Caddy)"
+    container: "gaia-public-proxy"
+    category: "ingress"
+    description: "Caddy reverse proxy met automatisch Let's Encrypt SSL beheer voor higaia.nl"
+    ports:
+      - "80/tcp"
+      - "443/tcp"
+
+  - id: "chronicle-db"
+    name: "Chronicle Vector DB"
+    container: "chronicle-db"
+    category: "database"
+    description: "Postgres 16 met pgvector extensie voor embedding search"
+    ports:
+      - "5434:5432"
+
+  - id: "cognition-db"
+    name: "Cognition Database"
+    container: "gaia-cognition-db"
+    category: "database"
+    description: "Postgres 16 database voor Gaia Cognition hypotheses en patronen"
+    ports:
+      - "5432"
+
+  - id: "hermes-proxy"
+    name: "Hermes Auth Proxy"
+    container: "gaia-hermes-proxy"
+    category: "proxy"
+    description: "Nginx proxy die interne authenticatietokens injecteert voor Hermes API"
+    ports:
+      - "8643:80"
