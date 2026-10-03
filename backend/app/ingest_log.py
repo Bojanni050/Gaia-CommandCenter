@@ -157,4 +157,78 @@ class IngestLogStore:
         }
 
 
+    def apply_gateway_payload(self, payload: Any) -> Dict[str, Any]:
+        """Importeer events uit een Ingestie Gateway-response (list of {events: [...]}).
+
+        Accepteert flexibele veldnamen (timestamp/time/created_at, event/type,
+        status, summary/message, payload/data, client, source, level) en
+        dedupliseert op id of (timestamp, event, summary).
+        """
+        if isinstance(payload, dict):
+            items = (
+                payload.get("events")
+                or payload.get("items")
+                or payload.get("logs")
+                or payload.get("data")
+                or []
+            )
+        elif isinstance(payload, list):
+            items = payload
+        else:
+            items = []
+
+        if not isinstance(items, list):
+            return {"imported": 0, "skipped": 0, "total": 0}
+
+        with self._lock:
+            existing_ids = {e.get("id") for e in self._entries}
+            existing_keys = {
+                (e.get("timestamp"), e.get("event"), e.get("summary"))
+                for e in self._entries
+            }
+
+        imported = 0
+        skipped = 0
+        for item in items:
+            if not isinstance(item, dict):
+                skipped += 1
+                continue
+            entry_id = item.get("id") or uuid.uuid4().hex
+            timestamp = (
+                item.get("timestamp")
+                or item.get("time")
+                or item.get("created_at")
+                or item.get("date")
+                or datetime.now(timezone.utc).isoformat()
+            )
+            event = item.get("event") or item.get("type") or "ingest"
+            status = str(item.get("status") or item.get("result") or "ok").lower()
+            summary = item.get("summary") or item.get("message") or ""
+            key = (timestamp, event, summary)
+            if entry_id in existing_ids or key in existing_keys:
+                skipped += 1
+                continue
+            entry = {
+                "id": entry_id,
+                "timestamp": timestamp,
+                "source": item.get("source") or "capture-rs",
+                "event": event,
+                "status": status,
+                "level": item.get("level") or ("error" if status in ("failed", "error") else "info"),
+                "summary": summary,
+                "client": item.get("client") or item.get("device") or None,
+                "payload": item.get("payload") or item.get("data") or {},
+            }
+            with self._lock:
+                self._entries.append(entry)
+                if len(self._entries) > settings.INGEST_LOG_MAX_ENTRIES:
+                    self._entries = self._entries[-settings.INGEST_LOG_MAX_ENTRIES:]
+                self._flush_locked()
+            existing_ids.add(entry_id)
+            existing_keys.add(key)
+            imported += 1
+
+        return {"imported": imported, "skipped": skipped, "total": len(items)}
+
+
 ingest_log_store = IngestLogStore()
