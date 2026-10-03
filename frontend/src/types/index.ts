@@ -146,6 +146,32 @@ export interface LogIssue {
   last_seen?: string;
 }
 
+export interface IngestEvent {
+  id: string;
+  timestamp: string;
+  source: string;
+  event: string;
+  status: 'ok' | 'pending' | 'failed' | 'rejected' | string;
+  level: 'info' | 'warning' | 'error' | 'debug' | string;
+  summary: string;
+  client?: string | null;
+  payload?: Record<string, any>;
+}
+
+export interface IngestLogStats {
+  total_events: number;
+  events_last_24h: number;
+  failed_events: number;
+  error_rate: number;
+  by_status: Record<string, number>;
+  by_source: Record<string, number>;
+  by_event: Record<string, number>;
+  by_level: Record<string, number>;
+  last_event: IngestEvent | null;
+  sources: string[];
+  events: string[];
+}
+
 export interface LogAnalysisReport {
   summary: {
     health_score: number;

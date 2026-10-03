@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Tailscale Host IP
     TAILSCALE_HOST: str = os.getenv("TAILSCALE_HOST", "100.65.0.15")
 
+    # Ingestie-log (capture-rs)
+    INGEST_LOG_PATH: str = os.getenv("INGEST_LOG_PATH", str(BASE_DIR / "data" / "ingest_log.jsonl"))
+    INGEST_LOG_MAX_ENTRIES: int = int(os.getenv("INGEST_LOG_MAX_ENTRIES", "10000"))
+
     class Config:
         env_file = ".env"
         extra = "ignore"

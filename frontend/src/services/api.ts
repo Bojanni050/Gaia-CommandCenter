@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats } from '../types';
 
 const API_BASE = '/api';
 
@@ -153,6 +153,26 @@ class ApiService {
 
   async analyzeContainerLogs(nameOrId: string, tail: number = 20, sinceHours: number = 25): Promise<LogIssue[]> {
     return this.request<LogIssue[]>(`/logs/analyze/${encodeURIComponent(nameOrId)}?tail=${tail}&since_hours=${sinceHours}`);
+  }
+
+  // Ingestie-log (capture-rs)
+  async getIngestLogs(params: {
+    source?: string;
+    event?: string;
+    status?: string;
+    q?: string;
+    since_hours?: number;
+    limit?: number;
+  }): Promise<IngestEvent[]> {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') qs.set(k, String(v));
+    });
+    return this.request<IngestEvent[]>(`/ingest-logs?${qs.toString()}`);
+  }
+
+  async getIngestLogStats(): Promise<IngestLogStats> {
+    return this.request<IngestLogStats>('/ingest-logs/stats');
   }
 }
 

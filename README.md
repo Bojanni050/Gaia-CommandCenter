@@ -19,9 +19,11 @@ Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met
    - Host CPU load, coreverdeling, RAM geheugenverbruik, NVMe/SSD schijfruimte en Docker daemon statistieken.
 4. **Directe Webinterface Koppelingen**:
    - Directe links ("Open UI") naar de interfaces van componenten (Hermes Dashboard, Hindsight UI, Gaia Admin Panel, Chronicle Dashboard, Gaia Web).
-5. **Realtime Container Logs**:
+5. **Ingestie-viewer (capture-rs)**:
+   - Logboek van ingestie-events uit de pijp capture-rs → Ingestie Gateway (Foundation/Chronicle), met filters op bron, eventtype, status en periode, plus aggregaatstatistiek (totaal, 24u-volume, foutpercentage).
+6. **Realtime Container Logs**:
    - Geïntegreerde log-viewer met tailing (50 tot 1000 regels), timestamps, auto-scroll, tekstfiltering en klembord-kopieerfunctie.
-6. **Veilige Authenticatie**:
+7. **Veilige Authenticatie**:
    - Toegang beveiligd met beheerdersauthenticatie (JWT sessie & HTTP-only cookies).
    - Docker socket (`/var/run/docker.sock`) blijft strikt server-side en wordt nooit blootgesteld aan de browser.
 
