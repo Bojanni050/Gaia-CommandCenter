@@ -56,7 +56,8 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
-          tags: tag:ci
+          # TIJDELIJK uitgeschakeld voor diagnose (404-herkomst):
+          # tags: tag:ci
 
       # Tijdelijk: toont of de runner de VPS echt ziet (status + ping).
       # Verwijderen zodra SSH groen is.
