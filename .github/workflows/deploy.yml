@@ -48,6 +48,12 @@ jobs:
       group: deploy-command-center
       cancel-in-progress: false
     steps:
+      # Tijdelijk: loopt ALTIJD (ook als Tailscale faalt), zodat we zien
+      # of de secrets de runner bereiken. Verwijderen na diagnose.
+      - name: Debug secrets presence (geen waarden)
+        if: always()
+        run: 'echo "ID gevuld: ${{ secrets.TS_OAUTH_CLIENT_ID != '''' }} / SECRET gevuld: ${{ secrets.TS_OAUTH_CLIENT_SECRET != '''' }}"'
+
       # Public SSH op de VPS is dicht — de runner joint eerst het
       # tailnet zodat hij de box via het Tailscale-IP bereikt.
       # DEPLOY_HOST moet 100.65.0.15 zijn.
@@ -61,9 +67,6 @@ jobs:
 
       # Tijdelijk: toont of de runner de VPS echt ziet (status + ping).
       # Verwijderen zodra SSH groen is.
-      - name: Debug secrets presence (geen waarden)
-        run: 'echo "ID gevuld: ${{ secrets.TS_OAUTH_CLIENT_ID != '''' }} / SECRET gevuld: ${{ secrets.TS_OAUTH_CLIENT_SECRET != '''' }}"'
-
       - name: Debug tailnet path to VPS
         run: |
           tailscale status
