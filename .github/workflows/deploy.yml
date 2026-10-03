@@ -58,6 +58,13 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
 
+      # Tijdelijk: toont of de runner de VPS echt ziet (status + ping).
+      # Verwijderen zodra SSH groen is.
+      - name: Debug tailnet path to VPS
+        run: |
+          tailscale status
+          tailscale ping --c=3 100.65.0.15 || true
+
       - name: Deploy Control Center on the VPS
         uses: appleboy/ssh-action@v1.2.2
         with:
