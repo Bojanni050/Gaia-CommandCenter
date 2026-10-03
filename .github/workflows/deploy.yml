@@ -1,0 +1,79 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    # Alleen deployen bij echte codewijzigingen — geen rebuild voor
+    # docs-only pushes.
+    paths:
+      - 'backend/**'
+      - 'frontend/src/**'
+      - 'frontend/package*.json'
+      - 'frontend/*.config.*'
+      - 'frontend/*.ts'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend syntax- en registry-check
+        run: |
+          python3 -m py_compile backend/app/*.py backend/app/routes/*.py
+          python3 -c "import yaml; r = yaml.safe_load(open('backend/registry.yaml')); assert r['components'], 'registry leeg'"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Eén deploy tegelijk: voorkomt gelijktijdige `docker compose up`
+    # collisions op de VPS. Wachtrij i.p.v. annuleren — een lopende
+    # deploy wordt nooit halverwege afgebroken.
+    concurrency:
+      group: deploy-command-center
+      cancel-in-progress: false
+    steps:
+      # Public SSH op de VPS is dicht — de runner joint eerst het
+      # tailnet zodat hij de box via het Tailscale-IP bereikt.
+      # DEPLOY_HOST moet 100.65.0.15 zijn.
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy Control Center on the VPS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          # reset --hard houdt de checkout identiek aan origin; .env is
+          # gitignored en blijft dus onaangeroerd.
+          script: |
+            set -e
+            cd /opt/gaia-control-center
+            git fetch --all
+            git reset --hard origin/main
+            docker compose up -d --build
+            docker image prune -f
+            docker compose ps
+            sleep 10
+            curl -sf http://127.0.0.1:8899/api/health
