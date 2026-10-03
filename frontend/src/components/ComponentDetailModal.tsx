@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, Terminal, Box, Activity, Copy, Check } from 'lucide-react';
 import { GaiaComponent } from '../types';
+import { EPISTEMIC_LABELS, LAYER_META } from '../layers';
 import { api } from '../services/api';
 
 interface ComponentDetailModalProps {
@@ -39,6 +40,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
     category,
     description,
     container,
+    layer,
+    epistemic,
+    lifecycle,
+    repo,
+    v3_note,
     auxiliary_containers,
     runtime,
     container_info,
@@ -136,6 +142,32 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                   <p className="text-sm text-ink-200 leading-relaxed font-sans">{description}</p>
                 </div>
               </div>
+
+              {/* V3 Architecture context */}
+              {(layer || epistemic || lifecycle || repo || v3_note) && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-mono text-ink-400 uppercase tracking-wider">V3 Architectuur</h4>
+                  <div className="p-4 rounded-xl bg-ink-950/60 border border-ink-800/80 space-y-2 text-xs font-mono">
+                    <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-ink-300">
+                      {layer && (
+                        <span><span className="text-ink-500">Laag:</span> {(LAYER_META[layer] && LAYER_META[layer].title) || layer}</span>
+                      )}
+                      {epistemic && (
+                        <span><span className="text-ink-500">Epistemiek:</span> {EPISTEMIC_LABELS[epistemic] || epistemic}</span>
+                      )}
+                      {lifecycle && (
+                        <span><span className="text-ink-500">Status:</span> {lifecycle}</span>
+                      )}
+                      {repo && (
+                        <span className="break-all"><span className="text-ink-500">Repo:</span> {repo}</span>
+                      )}
+                    </div>
+                    {v3_note && (
+                      <p className="text-[11px] text-ink-400 leading-relaxed font-sans border-t border-ink-800/60 pt-2">{v3_note}</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Status & Health Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

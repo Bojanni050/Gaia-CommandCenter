@@ -10,6 +10,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { LogAnalyzerPage } from './components/LogAnalyzerPage';
 import { api } from './services/api';
 import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from './types';
+import { LAYER_META, groupByLayer } from './layers';
 import { ExternalLink, Layers, Box, Activity, AlertCircle, Compass } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -126,6 +127,8 @@ export const App: React.FC = () => {
     (c) => c.composite_status === 'running' || c.composite_status === 'ok'
   ).length;
 
+  const layeredComponents = groupByLayer(components);
+
   return (
     <div className="min-h-screen bg-ink-950 text-ink-100 flex flex-col font-sans selection:bg-gold-500/25 selection:text-gold-200 grain">
       {/* Top Navigation */}
@@ -200,8 +203,8 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Gaia Components Section */}
-            <div className="space-y-3.5">
+            {/* Gaia Components Section (V3-laagmatrix) */}
+            <div className="space-y-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-gold-400" />
@@ -217,16 +220,30 @@ export const App: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {components.map((comp) => (
-                  <GaiaComponentCard
-                    key={comp.id}
-                    component={comp}
-                    onSelect={setSelectedComponent}
-                    onOpenLogs={setLogContainer}
-                  />
-                ))}
-              </div>
+              {layeredComponents.map((group) => (
+                <div key={group.layer} className="space-y-2.5">
+                  <div className="flex items-baseline gap-2.5">
+                    <h4 className="text-xs font-mono uppercase tracking-widest text-gold-300/90">
+                      {(LAYER_META[group.layer] && LAYER_META[group.layer].title) || group.layer}
+                    </h4>
+                    {LAYER_META[group.layer] && (
+                      <p className="text-[11px] text-ink-500 font-sans truncate hidden sm:block">
+                        {LAYER_META[group.layer].subtitle}
+                      </p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {group.items.map((comp) => (
+                      <GaiaComponentCard
+                        key={comp.id}
+                        component={comp}
+                        onSelect={setSelectedComponent}
+                        onOpenLogs={setLogContainer}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Quick Web Interfaces Links */}
@@ -291,28 +308,42 @@ export const App: React.FC = () => {
 
         {/* TAB 2: GAIA COMPONENTS */}
         {activeTab === 'components' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="glass-panel p-5 flex items-center justify-between border border-ink-800">
               <div>
                 <h2 className="font-serif text-2xl font-light text-ink-100">
                   <span className="italic text-gold-400">Gaia</span> Component Registry
                 </h2>
                 <p className="text-xs text-ink-400 mt-1 font-sans">
-                  Conceptuele architectuur van Gaia. Containers en processen fungeren als onderliggend zenuwstelsel.
+                  V3-architectuurmatrix: harnas, geheugenpijp, capabilities en clients. Containers en processen fungeren als onderliggend zenuwstelsel.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {components.map((comp) => (
-                <GaiaComponentCard
-                  key={comp.id}
-                  component={comp}
-                  onSelect={setSelectedComponent}
-                  onOpenLogs={setLogContainer}
-                />
-              ))}
-            </div>
+            {layeredComponents.map((group) => (
+              <div key={group.layer} className="space-y-2.5">
+                <div className="flex items-baseline gap-2.5 px-1">
+                  <h3 className="text-xs font-mono uppercase tracking-widest text-gold-300/90">
+                    {(LAYER_META[group.layer] && LAYER_META[group.layer].title) || group.layer}
+                  </h3>
+                  {LAYER_META[group.layer] && (
+                    <p className="text-[11px] text-ink-500 font-sans hidden sm:block">
+                      {LAYER_META[group.layer].subtitle}
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {group.items.map((comp) => (
+                    <GaiaComponentCard
+                      key={comp.id}
+                      component={comp}
+                      onSelect={setSelectedComponent}
+                      onOpenLogs={setLogContainer}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

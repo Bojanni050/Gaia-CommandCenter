@@ -18,6 +18,12 @@ class ComponentUpdateRequest(BaseModel):
     process_name: Optional[str] = None
     host_component: Optional[str] = None
     health_endpoint: Optional[str] = None
+    health_auth_env: Optional[str] = None
+    layer: Optional[str] = None
+    epistemic: Optional[str] = None
+    lifecycle: Optional[str] = None
+    repo: Optional[str] = None
+    v3_note: Optional[str] = None
     ui_url: Optional[str] = None
     ui_label: Optional[str] = None
     config_source: Optional[str] = None
@@ -34,6 +40,12 @@ class ComponentCreateRequest(BaseModel):
     process_name: Optional[str] = None
     host_component: Optional[str] = None
     health_endpoint: Optional[str] = None
+    health_auth_env: Optional[str] = None
+    layer: Optional[str] = None
+    epistemic: Optional[str] = None
+    lifecycle: Optional[str] = None
+    repo: Optional[str] = None
+    v3_note: Optional[str] = None
     ui_url: Optional[str] = None
     ui_label: Optional[str] = None
     config_source: Optional[str] = None

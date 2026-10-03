@@ -1,18 +1,20 @@
-# Gaia Server Control Center (v0.1)
+# Gaia Server Control Center (v0.2)
 
 Een centrale, web-based beheer- en monitoringinterface ontworpen voor Gaia op Ubuntu VPS.
 
-Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met Docker en de host-services als onderliggende infrastructuur (geen generieke Portainer-kloon).
+Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met Docker en de host-services als onderliggende infrastructuur (geen generieke Portainer-kloon). Sinds v0.2 volgt de matrix de **V3-doelarchitectuur**: het harnas is Gaia (Gaia-Cloud), het model is vervangbaar.
 
 ---
 
-## Kernfunctionaliteiten (Milestone v0.1)
+## Kernfunctionaliteiten (v0.2)
 
-1. **Gaia Architectuurmatrix**:
-   - Live status van alle Gaia-componenten (Core, Hermes, Hindsight, Chronicle, ReasonIQ/Cognition, IntentIQ, MCP, Web).
+1. **Gaia V3-architectuurmatrix**:
+   - Live status gegroepeerd per laag: **Harnas** (Gaia API, Logos), **Geheugenpijp** (Foundation → Hindsight → Cognition), **Capabilities** (Hermes, MCP), **Clients** (Gaia Web, capture-rs gepland).
+   - Epistemische badges per component (`observation` / `interpretation` / `hypothesis` / `agency` / `executie` / `presence`) en lifecycle (`active` / `interim` / `planned`).
    - Onderscheid tussen **Gaia Components** (conceptueel) en **Infrastructuur** (Docker containers, databases, reverse proxies, volumes, netwerken).
 2. **Health Monitoring & Latency**:
    - Continue asynchrone health checks van alle HTTP en Docker health endpoints met milliseconde-latenties en live payload inspectie.
+   - Optionele Bearer-auth per endpoint via `health_auth_env`; een `401/403` wordt als `auth` (goud) getoond in plaats van `down`.
 3. **Systeembronnen & Docker Engine**:
    - Host CPU load, coreverdeling, RAM geheugenverbruik, NVMe/SSD schijfruimte en Docker daemon statistieken.
 4. **Directe Webinterface Koppelingen**:
@@ -25,7 +27,7 @@ Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met
 
 ---
 
-## Architectuur & Netwerkoverzicht
+## Architectuur & Netwerkoverzicht (V3)
 
 ```
 [ Tailscale VPN ] (100.65.0.15)
@@ -38,24 +40,31 @@ Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met
 │  └── FastAPI Backend (Python 3.12)                     │
 │       │                                                │
 │       ├── /var/run/docker.sock (Read-only Docker API)  │
-│       ├── Component Registry (registry.yaml)           │
-│       └── Asynchronous Health Probes                   │
+│       ├── Component Registry (registry.yaml, v2.0)     │
+│       └── Asynchronous Health Probes (+Bearer/env)     │
 └───────┬──────────────────────────────────┬─────────────┘
         │                                  │
         ▼                                  ▼
-[ Gaia Logical Components ]     [ Infrastructure Services ]
-• Gaia API / Core (:8891)       • Public Ingress Caddy (:80/:443)
-• Hermes Agent (:8642/:9119)    • gaia-hermes-proxy (:8643)
-• Hindsight Memory (:8888)      • chronicle-db pgvector (:5434)
-• Chronicle / PM2 (:4577)       • gaia-cognition-db (:5432)
-• ReasonIQ Cognition (:8890)    • Docker Engine v29.7 / Host OS
-• IntentIQ (Core integrated)
-• Gaia Web Client (:8090)
+[ Gaia V3-matrix per laag ]     [ Infrastructure Services ]
+• Harnas: Gaia API/Core (:8891) • Public Ingress Caddy (:80/:443)
+  + Logos (reflectie, in Core)  • Foundation DB pgvector (:5434)
+• Geheugenpijp:                 • gaia-cognition-db (:5432)
+  Foundation (:4577, pm2)       • gaia-hermes-proxy (:8643)
+  Hindsight (:8888)             • Docker Engine / Host OS
+  Cognition (:8890, interim)
+• Capabilities: Hermes (:8642/:9119), MCP (via Foundation)
+• Clients: Gaia Web (:8090), capture-rs (gepland)
 ```
+
+Geheugenpijp (eenrichting): `Foundation/Chronicle (observation) → Hindsight (interpretation/hypothesis) → Logos (beoordeling)`.
+Alleen menselijke bevestiging promoveert naar `confirmed` (Absolute Override). IntentIQ & ReasonIQ zijn
+gepensioneerd als losse lagen en opgegaan in Logos. Doelstructuur: 5 repositories
+(`Gaia-Cloud`, `Foundation`, `capture-rs`, `gaia-desktop`, `gaia-web`).
+Zie `Gaia-Cloud/docs/architecture-v3.md` (voorstel + open besluiten) en `Foundation/DEPLOYMENT.md`.
 
 ---
 
-## De Component Registry (`backend/registry.yaml`)
+## De Component Registry (`backend/registry.yaml`, v2.0)
 
 Alle Gaia-componenten worden gedeclareerd in `backend/registry.yaml`. Voorbeeld:
 
@@ -64,9 +73,14 @@ components:
   - id: "core"
     name: "Gaia API / Core"
     category: "core"
-    description: "Centraal zenuwstelsel: SOUL, Decision Engine en Response Engine"
+    layer: "harnas"            # harnas | geheugenpijp | capabilities | clients
+    epistemic: "agency"        # agency | observation | interpretation | hypothesis | execution | presence
+    lifecycle: "active"        # active | interim | planned (planned → nooit rood)
+    repo: "Gaia-Cloud (services/gaia-api)"
+    description: "Het harnas: centrale agency, SOUL, turn-orchestratie en Response Engine"
     container: "gaia-api"
     health_endpoint: "http://100.65.0.15:8891/health"
+    health_auth_env: "GAIA_API_TOKEN"  # optioneel: Bearer via env-var
     ui_url: "http://100.65.0.15:8891/admin"
     ui_label: "Open Gaia Admin"
     config_source: "/root/gaia/services/gaia-api/.env"
@@ -136,6 +150,9 @@ ADMIN_PASSWORD=jouw-veilige-wachtwoord
 SECRET_KEY=willekeurige-lange-sleutel-voor-jwt
 PORT=8899
 TAILSCALE_HOST=100.65.0.15
+# Optioneel: alleen nodig als een registry-component health_auth_env gebruikt
+# GAIA_API_TOKEN=
+# FOUNDATION_API_TOKEN=
 ```
 
 ```bash

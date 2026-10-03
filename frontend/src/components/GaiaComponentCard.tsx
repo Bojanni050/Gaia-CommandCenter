@@ -1,6 +1,7 @@
 import React from 'react';
 import { ExternalLink, Terminal, Cpu, Activity, Box } from 'lucide-react';
 import { GaiaComponent } from '../types';
+import { EPISTEMIC_LABELS } from '../layers';
 
 interface GaiaComponentCardProps {
   component: GaiaComponent;
@@ -18,6 +19,9 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
     category,
     description,
     container,
+    epistemic,
+    lifecycle,
+    repo,
     composite_status,
     container_stats,
     health_check,
@@ -25,6 +29,8 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
     ui_url,
     ui_label,
   } = component;
+
+  const isPlanned = lifecycle === 'planned';
 
   // Status mapping
   const getStatusBadge = () => {
@@ -68,11 +74,13 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
     }
   };
 
-  // Category styling matching Gaia taxonomy
+  // Category styling matching Gaia taxonomy (V3)
   const getCategoryColor = (cat: string) => {
     switch (cat.toLowerCase()) {
       case 'core':
         return 'text-gold-300 bg-gold-500/10 border-gold-400/25';
+      case 'logos':
+        return 'text-gold-200 bg-gold-600/15 border-gold-400/30';
       case 'reasoning':
         return 'text-sage-300 bg-sage-500/10 border-sage-400/25';
       case 'memory':
@@ -81,6 +89,10 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
         return 'text-ink-200 bg-ink-800/80 border-ink-700/60';
       case 'cognition':
         return 'text-gold-200 bg-gold-600/10 border-gold-500/20';
+      case 'capture':
+        return 'text-sage-300 bg-sage-600/10 border-sage-500/25';
+      case 'integration':
+        return 'text-ink-200 bg-ink-800/60 border-gold-400/20';
       case 'interface':
         return 'text-sage-200 bg-sage-600/10 border-sage-500/20';
       default:
@@ -111,10 +123,20 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${getCategoryColor(category)}`}>
                 {category}
               </span>
+              {epistemic && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-ink-700/60 bg-ink-900/70 text-ink-300 lowercase tracking-wide" title="Epistemische rol in de V3-geheugenpijp">
+                  {EPISTEMIC_LABELS[epistemic] || epistemic}
+                </span>
+              )}
+              {lifecycle && lifecycle !== 'active' && (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border uppercase tracking-wide font-semibold ${isPlanned ? 'text-ink-400 bg-ink-900 border-ink-700/60' : 'text-gold-300 bg-gold-500/10 border-gold-400/25'}`} title={repo || undefined}>
+                  {isPlanned ? 'Gepland' : 'Interim'}
+                </span>
+              )}
               {container && (
                 <span className="text-[11px] font-mono text-ink-400 flex items-center gap-1">
                   <Box className="w-3 h-3 text-ink-500" />
@@ -163,10 +185,13 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
               <span className="flex items-center gap-1.5">
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
-                    health_check.status === 'ok' ? 'bg-sage-400' : 'bg-clay-400'
+                    health_check.status === 'ok' ? 'bg-sage-400' : health_check.status === 'auth' ? 'bg-gold-400' : 'bg-clay-400'
                   }`}
                 />
-                Health: <span className="text-ink-300">{health_check.status === 'ok' ? 'OK' : 'Degraded'}</span>
+                Health:{' '}
+                <span className="text-ink-300">
+                  {health_check.status === 'ok' ? 'OK' : health_check.status === 'auth' ? 'Auth vereist' : health_check.status === 'degraded' ? 'Degraded' : 'Down'}
+                </span>
               </span>
               <span className="text-ink-500">{health_check.latency_ms}ms</span>
             </div>

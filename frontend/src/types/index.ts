@@ -34,7 +34,7 @@ export interface ContainerInfo {
 
 export interface HealthCheckResult {
   endpoint: string;
-  status: 'ok' | 'degraded' | 'down' | 'unknown';
+  status: 'ok' | 'degraded' | 'down' | 'unknown' | 'auth';
   status_code?: number | null;
   latency_ms: number;
   response?: any;
@@ -42,11 +42,21 @@ export interface HealthCheckResult {
   last_checked: string;
 }
 
+export type GaiaLayer = 'harnas' | 'geheugenpijp' | 'capabilities' | 'clients' | string;
+export type GaiaEpistemic = 'agency' | 'observation' | 'interpretation' | 'hypothesis' | 'execution' | 'presence' | string;
+export type GaiaLifecycle = 'active' | 'interim' | 'planned' | string;
+
 export interface GaiaComponent {
   id: string;
   name: string;
-  category: 'core' | 'reasoning' | 'memory' | 'knowledge' | 'cognition' | 'intent' | 'integration' | 'interface' | string;
+  category: 'core' | 'logos' | 'reasoning' | 'memory' | 'knowledge' | 'cognition' | 'capture' | 'intent' | 'integration' | 'interface' | string;
   description: string;
+  layer?: GaiaLayer;
+  epistemic?: GaiaEpistemic;
+  lifecycle?: GaiaLifecycle;
+  repo?: string;
+  v3_note?: string;
+  health_auth_env?: string;
   container?: string;
   auxiliary_containers?: string[];
   runtime?: string;

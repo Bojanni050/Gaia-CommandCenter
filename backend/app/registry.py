@@ -137,10 +137,19 @@ class RegistryManager:
         
         components_def = self._raw_registry.get("components", [])
 
-        # Gather all health checks concurrently
-        async def fetch_health(endpoint: str):
+        # Gather all health checks concurrently (met optionele Bearer-auth per component)
+        async def fetch_health(comp: Dict[str, Any]):
+            endpoint = comp.get("health_endpoint")
+            if not endpoint:
+                return None
+            headers = {}
+            token_env = comp.get("health_auth_env")
+            if token_env:
+                token = os.getenv(token_env, "")
+                if token:
+                    headers["Authorization"] = f"Bearer {token}"
             try:
-                return await health_checker.get_or_check(endpoint)
+                return await health_checker.get_or_check(endpoint, custom_headers=headers or None)
             except Exception as e:
                 return {
                     "endpoint": endpoint,
@@ -151,22 +160,16 @@ class RegistryManager:
                     "error": str(e)
                 }
 
-        endpoints_map = {
-            comp["id"]: comp["health_endpoint"]
-            for comp in components_def
-            if comp.get("health_endpoint")
-        }
-
         # Run all health checks in parallel
         results = await asyncio.gather(
-            *[fetch_health(ep) for ep in endpoints_map.values()],
+            *[fetch_health(comp) for comp in components_def],
             return_exceptions=True
         )
 
         health_by_id = {}
-        for (comp_id, _), res in zip(endpoints_map.items(), results):
+        for comp, res in zip(components_def, results):
             if isinstance(res, dict):
-                health_by_id[comp_id] = res
+                health_by_id[comp["id"]] = res
 
         enriched = []
         for comp in components_def:
@@ -179,8 +182,11 @@ class RegistryManager:
 
             # Determine composite status
             composite_status = "unknown"
-            
-            if comp.get("runtime") == "pm2":
+
+            if comp.get("lifecycle") == "planned":
+                # V3-doelcomponent dat nog niet bestaat: nooit rood tonen
+                composite_status = "unknown"
+            elif comp.get("runtime") == "pm2":
                 # Special handling for host processes like Chronicle
                 if health_res and health_res.get("status") == "ok":
                     composite_status = "running"

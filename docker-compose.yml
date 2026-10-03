@@ -21,6 +21,10 @@ services:
       - DOCKER_SOCKET_PATH=/var/run/docker.sock
       - REGISTRY_PATH=/app/registry.yaml
       - TAILSCALE_HOST=100.65.0.15
+      # Optioneel: Bearer-tokens voor health endpoints die auth vereisen
+      # (registryveld health_auth_env verwijst naar deze namen)
+      - GAIA_API_TOKEN=${GAIA_API_TOKEN:-}
+      - FOUNDATION_API_TOKEN=${FOUNDATION_API_TOKEN:-}
     env_file:
       - path: .env
         required: false

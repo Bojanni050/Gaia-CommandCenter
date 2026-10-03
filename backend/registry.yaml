@@ -1,23 +1,58 @@
-version: "1.0"
+version: "2.0"
 
-# GAIA LOGICAL COMPONENTS
-# Deze lijst definieert de daadwerkelijke Gaia architectuurcomponenten
+# GAIA V3 ARCHITECTUURMATRIX
+# Doelstructuur: 5 repositories (Gaia-Cloud, Foundation, capture-rs,
+# gaia-desktop, gaia-web). Het harnas is Gaia; het model is vervangbaar.
+# Geheugenpijp (eenrichting): Foundation/Chronicle (observation)
+#   -> Hindsight (interpretation/hypothesis) -> Logos (beoordeling/reflectie).
+# Alleen menselijke bevestiging promoveert naar `confirmed` (Absolute Override).
+# IntentIQ & ReasonIQ zijn gepensioneerd als losse lagen en opgegaan in Logos.
+# Veldlegenda per component:
+#   layer: harnas | geheugenpijp | capabilities | clients
+#   epistemic: agency | observation | interpretation | hypothesis | execution | presence
+#   lifecycle: active | interim | planned
+#   health_auth_env: naam van env-var met Bearer-token (optioneel)
+
+# HARNAS — Gaia Cloud: agency, SOUL, orkestratie, Response Engine
 components:
   - id: "core"
     name: "Gaia API / Core"
     category: "core"
-    description: "Centraal zenuwstelsel: SOUL, Decision Engine, Response Engine en multi-client orchestration"
+    layer: "harnas"
+    epistemic: "agency"
+    lifecycle: "active"
+    repo: "Gaia-Cloud (services/gaia-api)"
+    description: "Het harnas: centrale agency, SOUL, turn-orchestratie en Response Engine (enige expressiegrens naar clients)"
     container: "gaia-api"
     health_endpoint: "http://100.65.0.15:8891/health"
     ui_url: "http://100.65.0.15:8891/admin"
     ui_label: "Open Gaia Admin"
     config_source: "/root/gaia/services/gaia-api/.env"
     configurable: true
+    v3_note: "Admin surface: Logos-beslislog, LLM-call-log, provider/rollen-config, TTS-config (operator-only, Bearer)"
+
+  - id: "logos"
+    name: "Logos"
+    category: "logos"
+    layer: "harnas"
+    epistemic: "interpretation"
+    lifecycle: "active"
+    repo: "Gaia-Cloud (services/gaia-api/src/logos)"
+    description: "Geconsolideerde reflectieve faculteit (ex-IntentIQ/ReasonIQ/DecisionIQ): retrospectieve intentie, betekenis & evidentie, besluitvorming. Reflecteert, handelt niet."
+    host_component: "core"
+    ui_url: "http://100.65.0.15:8891/admin"
+    ui_label: "Logos Beslislog"
+    configurable: false
+    v3_note: "IntentIQ & ReasonIQ zijn gepensioneerd als losse lagen (architectuurbesluit sep 2026). Timing live-vs-achtergrondreflectie is nog een open V3-besluit."
 
   - id: "hermes"
     name: "Hermes Agent"
     category: "reasoning"
-    description: "Autonome reasoning engine capability en model gateway (Nous Research)"
+    layer: "capabilities"
+    epistemic: "execution"
+    lifecycle: "active"
+    repo: "extern (hermes-agent)"
+    description: "Extern executie-instrument onder Gaia's regie (HADES: geen eigen identiteit, geen duurzaam geheugen, geen epistemische autoriteit)"
     container: "hermes"
     auxiliary_containers:
       - "gaia-hermes-proxy"
@@ -26,70 +61,96 @@ components:
     ui_label: "Open Hermes Dashboard"
     config_source: "/root/hermes-agent/.env"
     configurable: false
+    v3_note: "Werkgeheugen is tijdelijk; duurzame uitkomsten keren alleen met herkomst en voorlopige status terug"
 
   - id: "hindsight"
     name: "Hindsight"
     category: "memory"
-    description: "Long-term reflectief en episodisch geheugen voor Gaia (bank 'bojan')"
+    layer: "geheugenpijp"
+    epistemic: "interpretation"
+    lifecycle: "active"
+    repo: "extern (Hindsight provider)"
+    description: "Externe, vervangbare geheugenprovider: bewaart en herhaalt begrip (memories, feiten, patronen, hypotheses). Persisteert; redeneert niet."
     container: "hindsight"
     health_endpoint: "http://100.65.0.15:8888/health"
     ui_url: "http://100.65.0.15:9999/dashboard"
     ui_label: "Open Hindsight UI"
     config_source: "/opt/hindsight/.env"
     configurable: false
+    v3_note: "Bank 'bojan'. Reflectie-pijp Foundation->Hindsight stuurt mens-bevestigde feiten door met provenance"
 
-  - id: "chronicle"
-    name: "Chronicle / Foundation"
+  - id: "foundation"
+    name: "Foundation (Chronicle)"
     category: "knowledge"
-    description: "Epistemisch geheugen, actieve ingest, embeddings en consolidator"
+    layer: "geheugenpijp"
+    epistemic: "observation"
+    lifecycle: "active"
+    repo: "Foundation"
+    description: "De stekkerdoos: bronarchief (Chronicle), Ingestie Gateway (/api/ingest/*, alles observation) en MCP-server. Enige epistemische bron."
     runtime: "pm2"
     process_name: "chronicle"
-    container: "chronicle-db"
     health_endpoint: "http://100.65.0.15:4577/api/settings/status"
     ui_url: "http://100.65.0.15:4577/ui/"
-    ui_label: "Open Chronicle UI"
+    ui_label: "Open Foundation UI"
     config_source: "/opt/Foundation/.env"
     configurable: false
+    v3_note: "PM2 'chronicle' (index.js + memory-proces :4578 loopback). Status-endpoint is publiek; ingest/diagnostiek vereist Bearer. 0.0.0.0-binding verboden."
 
   - id: "cognition"
-    name: "ReasonIQ / Cognition"
+    name: "Cognition Service"
     category: "cognition"
-    description: "Hypothese-lifecycle (propose → test → confirm) en patroonherkenning"
+    layer: "geheugenpijp"
+    epistemic: "hypothesis"
+    lifecycle: "interim"
+    repo: "Gaia-Cloud (services/cognition)"
+    description: "Interim opslag- en API-laag voor patronen en hypothese-lifecycle (proposed → testing → confirmed/rejected)"
     container: "gaia-cognition"
     auxiliary_containers:
       - "gaia-cognition-db"
     health_endpoint: "http://100.65.0.15:8890/health"
     config_source: "/opt/gaia-cognition/.env"
     configurable: false
-
-  - id: "intentiq"
-    name: "IntentIQ"
-    category: "intent"
-    description: "Intent understanding: tweetraps heuristische & semantische classificatie (gehost in Gaia Core)"
-    host_component: "core"
-    ui_url: "http://100.65.0.15:8891/admin"
-    ui_label: "IntentIQ Instellingen"
-    config_source: "/root/gaia/services/gaia-api/data/intentiq-config.json"
-    configurable: true
+    v3_note: "V3-eigenaarschap van hypothesevorming vs. opslag (Logos/Hindsight/cognition) is nog een open besluit"
 
   - id: "mcp"
     name: "MCP Server"
     category: "integration"
-    description: "Model Context Protocol interface over Chronicle epistemisch geheugen"
-    host_component: "chronicle"
+    layer: "capabilities"
+    epistemic: "execution"
+    lifecycle: "active"
+    repo: "Foundation (server/mcpServer.js)"
+    description: "Een API waar alle clients (incl. IDE's en AI-agents) op inpluggen. Acties met gevolgen vereisen menselijke toestemming."
+    host_component: "foundation"
     config_source: "/opt/Foundation/server/mcpServer.js"
     configurable: false
+    v3_note: "Input via MCP krijgt altijd status observation; nooit direct naar reflectie"
+
+  - id: "capture-rs"
+    name: "capture-rs"
+    category: "capture"
+    layer: "clients"
+    epistemic: "observation"
+    lifecycle: "planned"
+    repo: "capture-rs (doelrepository)"
+    description: "V3-doelcomponent: lokale scherm- en activiteitenopname (Rust) aan clientzijde. Voedt de Ingestie Gateway."
+    configurable: false
+    v3_note: "Nog niet aanwezig in deze checkout; geen monitoring tot implementatie"
 
   - id: "web"
     name: "Gaia Web"
     category: "interface"
-    description: "Officiële web-interface voor de dagelijkse conversational presence"
+    layer: "clients"
+    epistemic: "presence"
+    lifecycle: "interim"
+    repo: "gaia-web (higaia.nl)"
+    description: "Webclient: presence en interface naar dezelfde Gaia (geen instantie van haar)"
     container: "gaia-web"
     health_endpoint: "http://127.0.0.1:8090"
     ui_url: "https://higaia.nl"
     ui_label: "Open Gaia Web"
     config_source: "environment"
     configurable: false
+    v3_note: "Migratie naar uniforme Gaia API is gepland (web-migration-plan); Logos draait interim nog client-side"
 
 # INFRASTRUCTURE SERVICES
 # Ondersteunende containers en datastores die geen logische Gaia-agent zijn
@@ -104,10 +165,10 @@ infrastructure:
       - "443/tcp"
 
   - id: "chronicle-db"
-    name: "Chronicle Vector DB"
+    name: "Foundation Vector DB"
     container: "chronicle-db"
     category: "database"
-    description: "Postgres 16 met pgvector extensie voor embedding search"
+    description: "Postgres 16 met pgvector voor Foundation/Chronicle (Drizzle-migraties). Hostpoort 5434, firewall dicht."
     ports:
       - "5434:5432"
 
@@ -115,7 +176,7 @@ infrastructure:
     name: "Cognition Database"
     container: "gaia-cognition-db"
     category: "database"
-    description: "Postgres 16 database voor Gaia Cognition hypotheses en patronen"
+    description: "Postgres 16 database voor Cognition hypotheses en patronen"
     ports:
       - "5432"
 
@@ -123,6 +184,6 @@ infrastructure:
     name: "Hermes Auth Proxy"
     container: "gaia-hermes-proxy"
     category: "proxy"
-    description: "Nginx proxy die interne authenticatietokens injecteert voor Hermes API"
+    description: "Nginx proxy die interne authenticatietokens injecteert en Origin-headers stript voor Hermes API"
     ports:
       - "8643:80"

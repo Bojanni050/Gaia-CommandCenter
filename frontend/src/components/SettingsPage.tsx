@@ -31,6 +31,9 @@ interface ComponentFormData {
   ui_label: string;
   config_source: string;
   configurable: boolean;
+  layer: string;
+  epistemic: string;
+  repo: string;
 }
 
 interface TestResult {
@@ -67,6 +70,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     ui_label: '',
     config_source: '',
     configurable: false,
+    layer: '',
+    epistemic: '',
+    repo: '',
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -84,6 +90,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         ui_label: c.ui_label || '',
         config_source: c.config_source || '',
         configurable: !!c.configurable,
+        layer: c.layer || '',
+        epistemic: c.epistemic || '',
+        repo: c.repo || '',
       };
     });
     setFormDataMap(initialMap);
@@ -132,6 +141,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         ui_label: orig.ui_label || '',
         config_source: orig.config_source || '',
         configurable: !!orig.configurable,
+        layer: orig.layer || '',
+        epistemic: orig.epistemic || '',
+        repo: orig.repo || '',
       },
     }));
 
@@ -224,6 +236,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         ui_label: '',
         config_source: '',
         configurable: false,
+        layer: '',
+        epistemic: '',
+        repo: '',
       });
       onRefreshComponents();
     } catch (err: any) {
@@ -370,6 +385,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               ui_label: comp.ui_label || '',
               config_source: comp.config_source || '',
               configurable: !!comp.configurable,
+              layer: comp.layer || '',
+              epistemic: comp.epistemic || '',
+              repo: comp.repo || '',
             };
 
             const isDirty = dirtyMap[comp.id] || false;
@@ -501,13 +519,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                       onChange={(e) => handleFieldChange(comp.id, 'category', e.target.value)}
                       className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-1.5 text-xs text-ink-100 focus:outline-none focus:border-gold-400/50 font-mono"
                     >
-                      <option value="core">core (Centraal zenuwstelsel)</option>
-                      <option value="reasoning">reasoning (Nous/Hermes redeneerlaag)</option>
-                      <option value="memory">memory (Hindsight episodisch geheugen)</option>
-                      <option value="knowledge">knowledge (Chronicle epistemisch geheugen)</option>
-                      <option value="cognition">cognition (ReasonIQ hypothese-lifecycle)</option>
-                      <option value="intent">intent (IntentIQ classificatie)</option>
-                      <option value="interface">interface (Web UI / presence)</option>
+                      <option value="core">core (Harnas: agency &amp; orkestratie)</option>
+                      <option value="logos">logos (Harnas: reflectieve faculteit)</option>
+                      <option value="reasoning">reasoning (Hermes executie-instrument)</option>
+                      <option value="memory">memory (Hindsight geheugenprovider)</option>
+                      <option value="knowledge">knowledge (Foundation bronarchief)</option>
+                      <option value="cognition">cognition (hypothese-lifecycle, interim)</option>
+                      <option value="capture">capture (observatiebron)</option>
+                      <option value="interface">interface (client presence)</option>
                       <option value="integration">integration (MCP / gateway)</option>
                     </select>
                   </div>
@@ -617,6 +636,58 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     />
                   </div>
 
+                  {/* V3 Layer */}
+                  <div>
+                    <label className="block text-[11px] font-mono text-ink-400 mb-1 font-medium">
+                      V3 Laag
+                    </label>
+                    <select
+                      value={form.layer}
+                      onChange={(e) => handleFieldChange(comp.id, 'layer', e.target.value)}
+                      className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-1.5 text-xs text-ink-100 focus:outline-none focus:border-gold-400/50 font-mono"
+                    >
+                      <option value="">-- geen --</option>
+                      <option value="harnas">harnas (Gaia Cloud)</option>
+                      <option value="geheugenpijp">geheugenpijp</option>
+                      <option value="capabilities">capabilities</option>
+                      <option value="clients">clients</option>
+                    </select>
+                  </div>
+
+                  {/* V3 Epistemic */}
+                  <div>
+                    <label className="block text-[11px] font-mono text-ink-400 mb-1 font-medium">
+                      Epistemische Rol
+                    </label>
+                    <select
+                      value={form.epistemic}
+                      onChange={(e) => handleFieldChange(comp.id, 'epistemic', e.target.value)}
+                      className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-1.5 text-xs text-ink-100 focus:outline-none focus:border-gold-400/50 font-mono"
+                    >
+                      <option value="">-- geen --</option>
+                      <option value="agency">agency</option>
+                      <option value="observation">observation</option>
+                      <option value="interpretation">interpretation</option>
+                      <option value="hypothesis">hypothesis</option>
+                      <option value="execution">execution</option>
+                      <option value="presence">presence</option>
+                    </select>
+                  </div>
+
+                  {/* V3 Repo */}
+                  <div>
+                    <label className="block text-[11px] font-mono text-ink-400 mb-1 font-medium">
+                      Repository / Herkomst
+                    </label>
+                    <input
+                      type="text"
+                      value={form.repo}
+                      onChange={(e) => handleFieldChange(comp.id, 'repo', e.target.value)}
+                      placeholder="bijv. Gaia-Cloud (services/gaia-api)"
+                      className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-1.5 text-xs text-ink-100 placeholder-ink-600 focus:outline-none focus:border-gold-400/50 font-mono"
+                    />
+                  </div>
+
                   {/* Description */}
                   <div className="md:col-span-2 lg:col-span-2">
                     <label className="block text-[11px] font-mono text-ink-400 mb-1 font-medium">
@@ -712,13 +783,31 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-2 text-xs text-ink-100 focus:outline-none focus:border-gold-400/50 font-mono"
                   >
                     <option value="core">core</option>
+                    <option value="logos">logos</option>
                     <option value="reasoning">reasoning</option>
                     <option value="memory">memory</option>
                     <option value="knowledge">knowledge</option>
                     <option value="cognition">cognition</option>
-                    <option value="intent">intent</option>
+                    <option value="capture">capture</option>
                     <option value="interface">interface</option>
                     <option value="integration">integration</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-ink-400 mb-1 font-medium">
+                    V3 Laag
+                  </label>
+                  <select
+                    value={newComponentData.layer}
+                    onChange={(e) => setNewComponentData({ ...newComponentData, layer: e.target.value })}
+                    className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-2 text-xs text-ink-100 focus:outline-none focus:border-gold-400/50 font-mono"
+                  >
+                    <option value="">-- geen --</option>
+                    <option value="harnas">harnas</option>
+                    <option value="geheugenpijp">geheugenpijp</option>
+                    <option value="capabilities">capabilities</option>
+                    <option value="clients">clients</option>
                   </select>
                 </div>
 

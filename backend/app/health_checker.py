@@ -35,11 +35,14 @@ class HealthChecker:
 
                 result = {
                     "endpoint": endpoint_url,
-                    "status": "ok" if is_ok else "degraded",
+                    "status": "ok" if is_ok else ("auth" if resp.status_code in (401, 403) else "degraded"),
                     "status_code": resp.status_code,
                     "latency_ms": latency_ms,
                     "response": preview,
-                    "error": None if is_ok else f"HTTP Status {resp.status_code}",
+                    "error": None if is_ok else (
+                        "Authenticatie vereist (HTTP 401/403) — stel health_auth_env in" if resp.status_code in (401, 403)
+                        else f"HTTP Status {resp.status_code}"
+                    ),
                     "last_checked": datetime.now(timezone.utc).isoformat()
                 }
                 return result

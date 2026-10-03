@@ -56,7 +56,7 @@ def test_api():
             stats = c.get("container_stats")
             stats_info = f"CPU: {stats['cpu_percent']}%, RAM: {round(stats['memory_usage']/1048576)}MB" if stats and "cpu_percent" in stats else "No stats"
             ui_info = f"UI: {c['ui_url']}" if c.get("has_ui") else "No UI"
-            print(f"  [{c['composite_status'].upper()}] {c['name']} ({c['category']}) | {c_name} | {hc_info} | {stats_info} | {ui_info}")
+            print(f"  [{c['composite_status'].upper()}] {c['name']} ({c.get('layer','?')}/{c['category']}/{c.get('epistemic','?')}/{c.get('lifecycle','active')}) | {c_name} | {hc_info} | {stats_info} | {ui_info}")
 
     # 5. Containers
     req = urllib.request.Request(
