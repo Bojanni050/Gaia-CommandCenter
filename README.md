@@ -21,9 +21,11 @@ Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met
    - Directe links ("Open UI") naar de interfaces van componenten (Hermes Dashboard, Hindsight UI, Gaia Admin Panel, Chronicle Dashboard, Gaia Web).
 5. **Ingestie-viewer (capture-rs)**:
    - Live lezing van de Ingestie Gateway van Foundation (Chronicle) via `GET /api/ingest-logs`: wat capture-rs en andere clients aanleveren, en of de ingest-brug het al tot episode verwerkte. Met filters op bron, eventtype, status en periode, plus aggregaatstatistiek (recent venster, 24u-volume, wachtend op brug, foutpercentage). Vereist `FOUNDATION_API_TOKEN`.
-6. **Realtime Container Logs**:
+6. **Hypothesen-viewer (Cognition, read-only)**:
+   - Volgt de afgeleide kennis die Logos vormt en Cognition administreert, via `GET /api/hypotheses` (bron: `GET {COGNITION_URL}/v1/banks/{COGNITION_BANK_ID}/hypotheses`). Toont de lifecycle (`proposed → testing → corroborated → confirmed | rejected`), confidence, herkomst (`chronicle:<id>`), verificatieplan en consolidatie, met filters op status en soort (`hypothese` / `mental model` / `relatie` / `open vraag`) en aggregaatstatistiek. Cognition is Tailscale-gebonden en kent geen auth; de backend proxyt, de browser ziet `:8890` nooit.
+7. **Realtime Container Logs**:
    - Geïntegreerde log-viewer met tailing (50 tot 1000 regels), timestamps, auto-scroll, tekstfiltering en klembord-kopieerfunctie.
-7. **Veilige Authenticatie**:
+8. **Veilige Authenticatie**:
    - Toegang beveiligd met beheerdersauthenticatie (JWT sessie & HTTP-only cookies).
    - Docker socket (`/var/run/docker.sock`) blijft strikt server-side en wordt nooit blootgesteld aan de browser.
 

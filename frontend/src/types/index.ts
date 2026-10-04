@@ -173,6 +173,51 @@ export interface IngestLogStats {
   events: string[];
 }
 
+// Hypothesen / afgeleide statements — Cognition (lifecycle-eigenaar, read-only)
+export type HypothesisStatus = 'proposed' | 'testing' | 'corroborated' | 'confirmed' | 'rejected' | string;
+export type HypothesisKind = 'hypothesis' | 'mental_model' | 'relationship' | 'open_question' | string;
+
+export interface Hypothesis {
+  id: string;
+  bank_id: string;
+  kind: HypothesisKind;
+  statement: string;
+  confidence: number;
+  status: HypothesisStatus;
+  verification_plan: string;
+  evidence_memory_ids: string[];
+  evidence_for: string[];
+  evidence_against: string[];
+  persistence: 'ephemeral' | 'durable' | string;
+  method: 'asserted' | 'derived' | 'tested' | string;
+  sources: string[];
+  supersedes_id?: string | null;
+  superseded_by_id?: string | null;
+  confirmed_document_id?: string | null;
+  rejection_reason?: string | null;
+  verwerp_bron?: 'mens' | 'consolidatie' | string | null;
+  tested_at?: string | null;
+  confirmed_at?: string | null;
+  rejected_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HypothesisStats {
+  total: number;
+  by_status: Record<string, number>;
+  by_kind: Record<string, number>;
+  by_verwerp_bron: Record<string, number>;
+  avg_confidence: number | null;
+  proposed: number;
+  testing: number;
+  corroborated: number;
+  confirmed: number;
+  rejected: number;
+  statuses: string[];
+  kinds: string[];
+}
+
 export interface LogAnalysisReport {
   summary: {
     health_score: number;

@@ -9,13 +9,14 @@ import { LoginPage } from './components/LoginPage';
 import { SettingsPage } from './components/SettingsPage';
 import { LogAnalyzerPage } from './components/LogAnalyzerPage';
 import { IngestLogPage } from './components/IngestLogPage';
+import { HypothesesPage } from './components/HypothesesPage';
 import { api } from './services/api';
 import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from './types';
 import { LAYER_META, groupByLayer } from './layers';
 import { ExternalLink, Layers, Box, Activity, AlertCircle, Compass } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses'>('overview');
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null);
   const [components, setComponents] = useState<GaiaComponent[]>([]);
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
@@ -392,6 +393,10 @@ export const App: React.FC = () => {
         {/* TAB 6: INGESTIE VIEWER (capture-rs) */}
         {activeTab === 'ingest' && (
           <IngestLogPage />
+        )}
+        {/* TAB 7: HYPOTHESEN VIEWER (Cognition, read-only) */}
+        {activeTab === 'hypotheses' && (
+          <HypothesesPage />
         )}
       </main>
 

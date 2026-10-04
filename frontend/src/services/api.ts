@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats } from '../types';
 
 const API_BASE = '/api';
 
@@ -173,6 +173,24 @@ class ApiService {
 
   async getIngestLogStats(): Promise<IngestLogStats> {
     return this.request<IngestLogStats>('/ingest-logs/stats');
+  }
+
+  // Hypothesen / afgeleide statements — Cognition (read-only volgen)
+  async getHypotheses(params: {
+    status?: string;
+    kind?: string;
+    q?: string;
+    limit?: number;
+  }): Promise<Hypothesis[]> {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') qs.set(k, String(v));
+    });
+    return this.request<Hypothesis[]>(`/hypotheses?${qs.toString()}`);
+  }
+
+  async getHypothesisStats(): Promise<HypothesisStats> {
+    return this.request<HypothesisStats>('/hypotheses/stats');
   }
 }
 

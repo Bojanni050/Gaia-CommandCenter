@@ -37,6 +37,16 @@ class Settings(BaseSettings):
     FOUNDATION_API_TOKEN: str = os.getenv("FOUNDATION_API_TOKEN", "")
     FOUNDATION_HTTP_TIMEOUT_SECONDS: float = float(os.getenv("FOUNDATION_HTTP_TIMEOUT_SECONDS", "5"))
 
+    # Hypothesen — de bron is de Cognition-service (lifecycle-eigenaar, interim).
+    # GET /api/hypotheses toont de afgeleide statements die Logos vormde en
+    # Cognition administreert: proposed -> testing -> corroborated -> confirmed/rejected.
+    # Cognition is Tailscale-gebonden en kent geen auth (net als Hindsight).
+    COGNITION_URL: str = os.getenv(
+        "COGNITION_URL", f"http://{os.getenv('TAILSCALE_HOST', '100.65.0.15')}:8890"
+    )
+    COGNITION_BANK_ID: str = os.getenv("COGNITION_BANK_ID", "gaia")
+    COGNITION_HTTP_TIMEOUT_SECONDS: float = float(os.getenv("COGNITION_HTTP_TIMEOUT_SECONDS", "5"))
+
     class Config:
         env_file = ".env"
         extra = "ignore"

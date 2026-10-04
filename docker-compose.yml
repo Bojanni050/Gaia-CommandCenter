@@ -25,6 +25,10 @@ services:
       # FOUNDATION_API_TOKEN is verplicht voor die tab (Bearer-auth op /api/ingest-logs).
       - FOUNDATION_API_URL=${FOUNDATION_API_URL:-http://100.65.0.15:4577}
       - FOUNDATION_API_TOKEN=${FOUNDATION_API_TOKEN:-}
+      # Cognition-service (bron voor de Hypothesen-tab). Lifecycle-eigenaar;
+      # geen auth (Tailscale-gebonden), net als Hindsight. Bank-id is 'gaia'.
+      - COGNITION_URL=${COGNITION_URL:-http://100.65.0.15:8890}
+      - COGNITION_BANK_ID=${COGNITION_BANK_ID:-gaia}
       # Optioneel: Bearer-token voor Gaia API health endpoints achter auth
       - GAIA_API_TOKEN=${GAIA_API_TOKEN:-}
     env_file:
