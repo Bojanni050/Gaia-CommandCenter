@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Copy, Check, Radio, Clock, AlertTriangle, Database, Inbox, ChevronDown, ChevronRight, DownloadCloud } from 'lucide-react';
+import { RefreshCw, Copy, Check, Radio, Clock, AlertTriangle, Database, Inbox, ChevronDown, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
 import { IngestEvent, IngestLogStats } from '../types';
 
@@ -22,6 +22,7 @@ export const IngestLogPage: React.FC = () => {
   const [events, setEvents] = useState<IngestEvent[]>([]);
   const [stats, setStats] = useState<IngestLogStats | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<string>('');
   const [event, setEvent] = useState<string>('');
   const [status, setStatus] = useState<string>('');
@@ -30,23 +31,10 @@ export const IngestLogPage: React.FC = () => {
   const [filterQuery, setFilterQuery] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [syncing, setSyncing] = useState<boolean>(false);
-  const [syncMsg, setSyncMsg] = useState<string | null>(null);
-
-  const handleSync = () => {
-    setSyncing(true);
-    setSyncMsg(null);
-    api.syncIngestGateway()
-      .then((res) => {
-        setSyncMsg(`Gateway-sync klaar: ${res.imported} nieuw geïmporteerd, ${res.skipped} overgeslagen (van ${res.total}).`);
-        fetchEvents();
-      })
-      .catch((err) => setSyncMsg(`Gateway-sync mislukt: ${err.message}`))
-      .finally(() => setSyncing(false));
-  };
 
   const fetchEvents = useCallback(() => {
     setLoading(true);
+    setError(null);
     const params: Record<string, string | number> = { limit, since_hours: sinceHours };
     if (source) params.source = source;
     if (event) params.event = event;
@@ -54,7 +42,10 @@ export const IngestLogPage: React.FC = () => {
     if (filterQuery) params.q = filterQuery;
     api.getIngestLogs(params)
       .then((data) => setEvents(data))
-      .catch(() => setEvents([]))
+      .catch((err: Error) => {
+        setEvents([]);
+        setError(err.message || 'Kon de ingestie-log niet ophalen.');
+      })
       .finally(() => setLoading(false));
     api.getIngestLogStats()
       .then((data) => setStats(data))
@@ -108,7 +99,7 @@ export const IngestLogPage: React.FC = () => {
                 Ingestie <span className="italic text-sage-400 font-normal">Viewer</span>
               </h2>
               <p className="text-xs text-ink-400 mt-0.5 font-sans leading-relaxed">
-                Logging van de ingestiepijp: capture-rs &rarr; Ingestie Gateway (Foundation/Chronicle)
+                Live uit de Ingestie Gateway van Foundation/Chronicle &mdash; wat capture-rs aanlevert, en of de brug het al tot episode verwerkte
               </p>
             </div>
           </div>
@@ -116,12 +107,18 @@ export const IngestLogPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5 font-mono text-xs">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-ink-900 border border-ink-800 text-ink-300">
               <Database className="w-3.5 h-3.5 text-gold-400" />
-              <span>{stats?.total_events ?? '—'} events totaal</span>
+              <span>{stats?.total_events ?? '—'} events (recent)</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-sage-950/70 text-sage-300 border border-sage-700/60">
               <span className="w-2 h-2 rounded-full status-orb-running" />
               <span>{stats?.events_last_24h ?? '—'} in 24u</span>
             </div>
+            {(stats?.pending_events ?? 0) > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold-950/60 text-gold-300 border border-gold-700/60" title="Nog niet door de ingest-brug tot episode verwerkt">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{stats?.pending_events} wachten op brug</span>
+              </div>
+            )}
             {(stats?.failed_events ?? 0) > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-clay-950/70 text-clay-300 border border-clay-700/60">
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -131,6 +128,16 @@ export const IngestLogPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="glass-panel p-4 border border-clay-700/60 bg-clay-950/40 text-clay-200 text-xs font-mono flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Ingestie-log kon niet worden opgehaald</p>
+            <p className="text-clay-300/80 mt-0.5">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="glass-panel p-4 border border-ink-800 flex flex-wrap items-center gap-2.5 text-xs font-mono">
@@ -206,18 +213,9 @@ export const IngestLogPage: React.FC = () => {
           className="bg-ink-950 border border-ink-800 rounded px-2.5 py-1 text-xs text-ink-200 placeholder-ink-600 focus:outline-none focus:border-gold-400/40 w-36 sm:w-52 flex-1"
         />
         <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="btn-ghost py-1 px-2 text-xs hover:text-gold-300 ml-auto flex items-center gap-1.5"
-          title="Importeer events uit de Ingestie Gateway (Foundation/Chronicle)"
-        >
-          <DownloadCloud className={`w-3.5 h-3.5 ${syncing ? 'animate-pulse text-gold-400' : ''}`} />
-          <span className="hidden sm:inline">Sync gateway</span>
-        </button>
-        <button
           onClick={fetchEvents}
           disabled={loading}
-          className="btn-ghost py-1 px-2 text-xs hover:text-gold-300"
+          className="btn-ghost py-1 px-2 text-xs hover:text-gold-300 ml-auto"
           title="Herladen"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-gold-400' : ''}`} />
@@ -230,17 +228,6 @@ export const IngestLogPage: React.FC = () => {
           {copied ? <Check className="w-3.5 h-3.5 text-sage-400" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
-
-      {syncMsg && (
-        <div className={`p-3 rounded-lg border text-xs font-mono flex items-center justify-between ${
-          syncMsg.startsWith('Gateway-sync mislukt')
-            ? 'bg-clay-950/60 border-clay-700/50 text-clay-300'
-            : 'bg-sage-950/60 border-sage-700/50 text-sage-300'
-        }`}>
-          <span>{syncMsg}</span>
-          <button onClick={() => setSyncMsg(null)} className="text-ink-400 hover:text-ink-200">×</button>
-        </div>
-      )}
 
       {/* Event list */}
       <div className="glass-panel border border-ink-800 overflow-hidden">
@@ -257,20 +244,8 @@ export const IngestLogPage: React.FC = () => {
               Ingestie-events ophalen...
             </div>
           ) : events.length === 0 ? (
-            <div className="p-8 text-center space-y-2">
-              <Inbox className="w-8 h-8 text-ink-600 mx-auto" />
-              <p className="text-xs font-mono text-ink-400">
-                {(source || event || status || filterQuery)
-                  ? 'Geen ingestie-events die voldoen aan de huidige filters. Verwijder filters of vergroot de periode.'
-                  : 'Nog geen ingestie-events geregistreerd.'}
-              </p>
-              {!source && !event && !status && !filterQuery && (
-                <p className="text-[11px] font-mono text-ink-500 max-w-md mx-auto leading-relaxed">
-                  capture-rs is nog in fase <span className="text-gold-300">planned</span>: er is nog geen client die events aanlevert.
-                  Klik op <span className="text-gold-300">Sync gateway</span> om bestaande ingestie-historie uit de Ingestie Gateway
-                  (Foundation/Chronicle) te importeren, of registreer events via <span className="text-gold-300">POST /api/ingest-logs</span>.
-                </p>
-              )}
+            <div className="p-8 text-center text-ink-500 italic text-xs font-mono">
+              {error ? 'Ingestie-log niet beschikbaar.' : 'Geen ingestie-events gevonden die voldoen aan de filters.'}
             </div>
           ) : (
             events.map((e) => {

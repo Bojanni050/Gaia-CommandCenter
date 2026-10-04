@@ -162,6 +162,7 @@ export interface IngestLogStats {
   total_events: number;
   events_last_24h: number;
   failed_events: number;
+  pending_events: number;
   error_rate: number;
   by_status: Record<string, number>;
   by_source: Record<string, number>;

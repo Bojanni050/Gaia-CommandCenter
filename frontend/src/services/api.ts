@@ -174,10 +174,6 @@ class ApiService {
   async getIngestLogStats(): Promise<IngestLogStats> {
     return this.request<IngestLogStats>('/ingest-logs/stats');
   }
-
-  async syncIngestGateway(): Promise<{ imported: number; skipped: number; total: number; gateway_url: string }> {
-    return this.request('/ingest-logs/sync-gateway', { method: 'POST' });
-  }
 }
 
 export const api = new ApiService();

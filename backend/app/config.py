@@ -28,9 +28,14 @@ class Settings(BaseSettings):
     # Tailscale Host IP
     TAILSCALE_HOST: str = os.getenv("TAILSCALE_HOST", "100.65.0.15")
 
-    # Ingestie-log (capture-rs)
-    INGEST_LOG_PATH: str = os.getenv("INGEST_LOG_PATH", str(BASE_DIR / "data" / "ingest_log.jsonl"))
-    INGEST_LOG_MAX_ENTRIES: int = int(os.getenv("INGEST_LOG_MAX_ENTRIES", "10000"))
+    # Ingestie-log — de bron is de Ingestie Gateway van Foundation (Chronicle).
+    # GET /api/ingest-logs toont wat capture-rs en andere clients hebben aangeleverd
+    # en of de ingest-brug het al tot episode heeft verwerkt.
+    FOUNDATION_API_URL: str = os.getenv(
+        "FOUNDATION_API_URL", f"http://{os.getenv('TAILSCALE_HOST', '100.65.0.15')}:4577"
+    )
+    FOUNDATION_API_TOKEN: str = os.getenv("FOUNDATION_API_TOKEN", "")
+    FOUNDATION_HTTP_TIMEOUT_SECONDS: float = float(os.getenv("FOUNDATION_HTTP_TIMEOUT_SECONDS", "5"))
 
     class Config:
         env_file = ".env"

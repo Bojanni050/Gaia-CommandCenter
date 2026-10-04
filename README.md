@@ -20,7 +20,7 @@ Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met
 4. **Directe Webinterface Koppelingen**:
    - Directe links ("Open UI") naar de interfaces van componenten (Hermes Dashboard, Hindsight UI, Gaia Admin Panel, Chronicle Dashboard, Gaia Web).
 5. **Ingestie-viewer (capture-rs)**:
-   - Logboek van ingestie-events uit de pijp capture-rs → Ingestie Gateway (Foundation/Chronicle), met filters op bron, eventtype, status en periode, plus aggregaatstatistiek (totaal, 24u-volume, foutpercentage).
+   - Live lezing van de Ingestie Gateway van Foundation (Chronicle) via `GET /api/ingest-logs`: wat capture-rs en andere clients aanleveren, en of de ingest-brug het al tot episode verwerkte. Met filters op bron, eventtype, status en periode, plus aggregaatstatistiek (recent venster, 24u-volume, wachtend op brug, foutpercentage). Vereist `FOUNDATION_API_TOKEN`.
 6. **Realtime Container Logs**:
    - Geïntegreerde log-viewer met tailing (50 tot 1000 regels), timestamps, auto-scroll, tekstfiltering en klembord-kopieerfunctie.
 7. **Veilige Authenticatie**:

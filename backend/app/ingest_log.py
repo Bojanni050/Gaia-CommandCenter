@@ -1,234 +1,218 @@
+"""Ingestie-log — leest de Ingestie Gateway van Foundation (Chronicle).
+
+Foundation is de enige epistemische bron: alles wat capture-rs en andere
+clients aanleveren landt daar als `observation`, en de ingest-brug bevriest
+het daarna tot een episode. Deze module maakt die bron leesbaar voor het
+Control Center, zonder de data te dupliceren of te bewerken.
+
+Bron-endpoint: GET {FOUNDATION_API_URL}/api/ingest-logs?limit=N (Bearer-auth).
+"""
+
 import json
-import os
-import threading
 import time
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+import httpx
 
 from app.config import settings
 
+# Foundation capt de lijst zelf op 500 rijen (routes/ingestLogs.js).
+FOUNDATION_LIMIT_CAP = 500
 
-class IngestLogStore:
-    """Append-only store voor ingestie-events van capture-rs (en andere clients)."""
+# Korte cache: het dashboard pollt elke 15s en vraagt lijst + stats apart op.
+_CACHE_TTL_SECONDS = 5.0
 
-    def __init__(self):
-        self._lock = threading.Lock()
-        self._entries: List[Dict[str, Any]] = []
-        self._load()
 
-    def _load(self):
-        path = settings.INGEST_LOG_PATH
-        if not os.path.exists(path):
-            return
+class FoundationIngestError(Exception):
+    """De ingestie-log van Foundation kon niet worden opgehaald."""
+
+
+class FoundationIngestClient:
+    """Dunne read-only client op Foundation's GET /api/ingest-logs."""
+
+    def __init__(self) -> None:
+        self._cache: Dict[str, Any] = {"ts": 0.0, "objects": []}
+
+    @property
+    def base_url(self) -> str:
+        url = settings.FOUNDATION_API_URL or f"http://{settings.TAILSCALE_HOST}:4577"
+        return url.rstrip("/")
+
+    def _headers(self) -> Dict[str, str]:
+        headers = {"Accept": "application/json"}
+        token = settings.FOUNDATION_API_TOKEN.strip()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        return headers
+
+    async def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        url = f"{self.base_url}{path}"
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        self._entries.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
-            self._entries = self._entries[-settings.INGEST_LOG_MAX_ENTRIES:]
-        except Exception:
-            self._entries = []
+            async with httpx.AsyncClient(
+                timeout=settings.FOUNDATION_HTTP_TIMEOUT_SECONDS, follow_redirects=True
+            ) as client:
+                resp = await client.get(url, headers=self._headers(), params=params)
+        except httpx.HTTPError as exc:
+            raise FoundationIngestError(
+                f"Foundation onbereikbaar op {self.base_url}: {exc}"
+            ) from exc
 
-    def append(
-        self,
-        event: str,
-        status: str,
-        summary: str = "",
-        source: str = "capture-rs",
-        level: str = "info",
-        payload: Optional[Dict[str, Any]] = None,
-        client: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        entry = {
-            "id": uuid.uuid4().hex,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "source": source,
-            "event": event,
-            "status": status,
-            "level": level,
-            "summary": summary,
-            "client": client,
-            "payload": payload or {},
-        }
-        with self._lock:
-            self._entries.append(entry)
-            if len(self._entries) > settings.INGEST_LOG_MAX_ENTRIES:
-                self._entries = self._entries[-settings.INGEST_LOG_MAX_ENTRIES:]
-            self._flush_locked()
-        return entry
-
-    def _flush_locked(self):
-        path = settings.INGEST_LOG_PATH
-        try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                for e in self._entries[-settings.INGEST_LOG_MAX_ENTRIES:]:
-                    f.write(json.dumps(e, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
-
-    def query(
-        self,
-        source: Optional[str] = None,
-        event: Optional[str] = None,
-        status: Optional[str] = None,
-        level: Optional[str] = None,
-        q: Optional[str] = None,
-        since_hours: Optional[float] = None,
-        limit: int = 200,
-    ) -> List[Dict[str, Any]]:
-        since_ts = None
-        if since_hours and since_hours > 0:
-            since_ts = time.time() - since_hours * 3600
-
-        with self._lock:
-            entries = list(self._entries)
-
-        results = []
-        for e in reversed(entries):
-            if source and e.get("source") != source:
-                continue
-            if event and e.get("event") != event:
-                continue
-            if status and e.get("status") != status:
-                continue
-            if level and e.get("level") != level:
-                continue
-            if since_ts:
-                try:
-                    ts = datetime.fromisoformat(e["timestamp"]).timestamp()
-                except Exception:
-                    ts = 0
-                if ts < since_ts:
-                    continue
-            if q:
-                hay = f"{e.get('summary', '')} {e.get('event', '')} {e.get('client') or ''} {json.dumps(e.get('payload', {}), ensure_ascii=False)}".lower()
-                if q.lower() not in hay:
-                    continue
-            results.append(e)
-            if len(results) >= limit:
-                break
-        return results
-
-    def stats(self) -> Dict[str, Any]:
-        with self._lock:
-            entries = list(self._entries)
-
-        by_status: Dict[str, int] = {}
-        by_source: Dict[str, int] = {}
-        by_event: Dict[str, int] = {}
-        by_level: Dict[str, int] = {}
-        for e in entries:
-            by_status[e.get("status", "unknown")] = by_status.get(e.get("status", "unknown"), 0) + 1
-            by_source[e.get("source", "unknown")] = by_source.get(e.get("source", "unknown"), 0) + 1
-            by_event[e.get("event", "unknown")] = by_event.get(e.get("event", "unknown"), 0) + 1
-            by_level[e.get("level", "info")] = by_level.get(e.get("level", "info"), 0) + 1
-
-        total = len(entries)
-        failed = by_status.get("error", 0) + by_status.get("failed", 0) + by_status.get("rejected", 0)
-        window = 24 * 3600
-        now = time.time()
-        last_24h = 0
-        for e in entries:
-            try:
-                if now - datetime.fromisoformat(e["timestamp"]).timestamp() <= window:
-                    last_24h += 1
-            except Exception:
-                continue
-
-        return {
-            "total_events": total,
-            "events_last_24h": last_24h,
-            "failed_events": failed,
-            "error_rate": round((failed / total * 100), 1) if total else 0.0,
-            "by_status": by_status,
-            "by_source": by_source,
-            "by_event": by_event,
-            "by_level": by_level,
-            "last_event": entries[-1] if entries else None,
-            "sources": sorted(by_source.keys()),
-            "events": sorted(by_event.keys()),
-        }
-
-
-    def apply_gateway_payload(self, payload: Any) -> Dict[str, Any]:
-        """Importeer events uit een Ingestie Gateway-response (list of {events: [...]}).
-
-        Accepteert flexibele veldnamen (timestamp/time/created_at, event/type,
-        status, summary/message, payload/data, client, source, level) en
-        dedupliseert op id of (timestamp, event, summary).
-        """
-        if isinstance(payload, dict):
-            items = (
-                payload.get("events")
-                or payload.get("items")
-                or payload.get("logs")
-                or payload.get("data")
-                or []
+        if resp.status_code in (401, 403):
+            raise FoundationIngestError(
+                "Foundation weigerde het verzoek (401/403) — stel FOUNDATION_API_TOKEN in."
             )
-        elif isinstance(payload, list):
-            items = payload
+        if resp.status_code >= 400:
+            raise FoundationIngestError(
+                f"Foundation gaf HTTP {resp.status_code} terug op {path}."
+            )
+        try:
+            return resp.json()
+        except ValueError as exc:
+            raise FoundationIngestError("Foundation gaf geen geldige JSON terug.") from exc
+
+    async def fetch_objects(self, limit: int = FOUNDATION_LIMIT_CAP, force: bool = False) -> List[Dict[str, Any]]:
+        """Haal de recentste ingest_object-rijen op (nieuwste eerst)."""
+        now = time.monotonic()
+        if (
+            not force
+            and self._cache["objects"]
+            and (now - self._cache["ts"] < _CACHE_TTL_SECONDS)
+        ):
+            return self._cache["objects"]
+
+        capped = max(1, min(int(limit), FOUNDATION_LIMIT_CAP))
+        data = await self._get("/api/ingest-logs", params={"limit": capped})
+        if isinstance(data, dict):
+            objects = data.get("objects") or []
+        elif isinstance(data, list):
+            objects = data
         else:
-            items = []
+            objects = []
+        objects = [o for o in objects if isinstance(o, dict)]
 
-        if not isinstance(items, list):
-            return {"imported": 0, "skipped": 0, "total": 0}
+        self._cache = {"ts": now, "objects": objects}
+        return objects
 
-        with self._lock:
-            existing_ids = {e.get("id") for e in self._entries}
-            existing_keys = {
-                (e.get("timestamp"), e.get("event"), e.get("summary"))
-                for e in self._entries
-            }
 
-        imported = 0
-        skipped = 0
-        for item in items:
-            if not isinstance(item, dict):
-                skipped += 1
+def map_object(obj: Dict[str, Any]) -> Dict[str, Any]:
+    """Vertaal een Foundation ingest_object naar het IngestEvent-formaat.
+
+    Hergebruikt bewust de bestaande velden die de Ingestie-viewer al kent:
+    - event  = object_type (capture/chat/document/diary)
+    - status = 'ok' zodra de brug er een episode van maakte, anders 'pending'
+    """
+    processed_at = obj.get("memory_processed_at")
+    summary = obj.get("title") or obj.get("url") or ""
+    return {
+        "id": obj.get("id"),
+        "timestamp": obj.get("ingested_at"),
+        "source": obj.get("source") or "onbekend",
+        "event": obj.get("object_type") or "onbekend",
+        "status": "ok" if processed_at else "pending",
+        "level": "info",
+        "summary": summary,
+        "client": obj.get("source_provider"),
+        "payload": {
+            "object_type": obj.get("object_type"),
+            "url": obj.get("url"),
+            "provider_conversation_id": obj.get("provider_conversation_id"),
+            "occurred_at": obj.get("occurred_at"),
+            "memory_processed_at": processed_at,
+            "content_length": obj.get("content_length"),
+            "has_turns": obj.get("has_turns"),
+            "has_attachments": obj.get("has_attachments"),
+            "tags": obj.get("tags"),
+        },
+    }
+
+
+def _to_epoch(value: Optional[str]) -> float:
+    if not value:
+        return 0.0
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def filter_events(
+    events: List[Dict[str, Any]],
+    *,
+    source: Optional[str] = None,
+    event: Optional[str] = None,
+    status: Optional[str] = None,
+    level: Optional[str] = None,
+    q: Optional[str] = None,
+    since_hours: Optional[float] = None,
+    limit: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """Filter de (nieuwste-eerst) events met dezelfde semantiek als de viewer."""
+    since_ts = time.time() - since_hours * 3600 if since_hours and since_hours > 0 else None
+    needle = q.lower() if q else None
+
+    results: List[Dict[str, Any]] = []
+    for e in events:
+        if source and e.get("source") != source:
+            continue
+        if event and e.get("event") != event:
+            continue
+        if status and e.get("status") != status:
+            continue
+        if level and e.get("level") != level:
+            continue
+        if since_ts is not None and _to_epoch(e.get("timestamp")) < since_ts:
+            continue
+        if needle:
+            hay = (
+                f"{e.get('summary', '')} {e.get('event', '')} {e.get('client') or ''} "
+                f"{json.dumps(e.get('payload', {}), ensure_ascii=False)}"
+            ).lower()
+            if needle not in hay:
                 continue
-            entry_id = item.get("id") or uuid.uuid4().hex
-            timestamp = (
-                item.get("timestamp")
-                or item.get("time")
-                or item.get("created_at")
-                or item.get("date")
-                or datetime.now(timezone.utc).isoformat()
-            )
-            event = item.get("event") or item.get("type") or "ingest"
-            status = str(item.get("status") or item.get("result") or "ok").lower()
-            summary = item.get("summary") or item.get("message") or ""
-            key = (timestamp, event, summary)
-            if entry_id in existing_ids or key in existing_keys:
-                skipped += 1
-                continue
-            entry = {
-                "id": entry_id,
-                "timestamp": timestamp,
-                "source": item.get("source") or "capture-rs",
-                "event": event,
-                "status": status,
-                "level": item.get("level") or ("error" if status in ("failed", "error") else "info"),
-                "summary": summary,
-                "client": item.get("client") or item.get("device") or None,
-                "payload": item.get("payload") or item.get("data") or {},
-            }
-            with self._lock:
-                self._entries.append(entry)
-                if len(self._entries) > settings.INGEST_LOG_MAX_ENTRIES:
-                    self._entries = self._entries[-settings.INGEST_LOG_MAX_ENTRIES:]
-                self._flush_locked()
-            existing_ids.add(entry_id)
-            existing_keys.add(key)
-            imported += 1
-
-        return {"imported": imported, "skipped": skipped, "total": len(items)}
+        results.append(e)
+        if limit is not None and len(results) >= limit:
+            break
+    return results
 
 
-ingest_log_store = IngestLogStore()
+def build_stats(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Aggregaat over het opgehaalde venster (max 500)."""
+    by_status: Dict[str, int] = {}
+    by_source: Dict[str, int] = {}
+    by_event: Dict[str, int] = {}
+    by_level: Dict[str, int] = {}
+
+    window = 24 * 3600
+    now = time.time()
+    last_24h = 0
+
+    for e in events:
+        by_status[e.get("status", "onbekend")] = by_status.get(e.get("status", "onbekend"), 0) + 1
+        by_source[e.get("source", "onbekend")] = by_source.get(e.get("source", "onbekend"), 0) + 1
+        by_event[e.get("event", "onbekend")] = by_event.get(e.get("event", "onbekend"), 0) + 1
+        by_level[e.get("level", "info")] = by_level.get(e.get("level", "info"), 0) + 1
+        if now - _to_epoch(e.get("timestamp")) <= window:
+            last_24h += 1
+
+    total = len(events)
+    failed = sum(by_status.get(s, 0) for s in ("failed", "rejected", "error"))
+    pending = by_status.get("pending", 0)
+
+    return {
+        "total_events": total,
+        "events_last_24h": last_24h,
+        "failed_events": failed,
+        "pending_events": pending,
+        "error_rate": round((failed / total * 100), 1) if total else 0.0,
+        "by_status": by_status,
+        "by_source": by_source,
+        "by_event": by_event,
+        "by_level": by_level,
+        "last_event": events[0] if events else None,
+        "sources": sorted(by_source.keys()),
+        "events": sorted(by_event.keys()),
+    }
+
+
+foundation_ingest = FoundationIngestClient()
