@@ -7,6 +7,7 @@ on:
     # docs-only pushes.
     paths:
       - 'backend/**'
+      - '!backend/**/__pycache__/**'
       - 'frontend/src/**'
       - 'frontend/package*.json'
       - 'frontend/*.config.*'
