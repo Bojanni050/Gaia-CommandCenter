@@ -1,14 +1,54 @@
 import asyncio
 import re
+import time
 import yaml
 import os
 import logging
-from typing import Dict, List, Any, Optional
+from datetime import datetime
+from typing import Dict, List, Any, Optional, Tuple
 from app.config import settings
 from app.docker_service import docker_service
 from app.health_checker import health_checker
+from app.ingest_log import FoundationIngestError, foundation_ingest
 
 logger = logging.getLogger("registry")
+
+# Standaardvenster waarbinnen een feed-gebaseerd component "actief" is.
+DEFAULT_FRESHNESS_WINDOW_SECONDS = 900.0
+
+
+def _parse_epoch(value: Optional[str]) -> Optional[float]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError):
+        return None
+
+
+async def _foundation_feed_activity(match_field: str, match_value: Any) -> Tuple[Optional[str], Optional[float]]:
+    """Nieuwste (timestamp, leeftijd in s) van een rij in de Foundation-feed.
+
+    Client-componenten zoals capture-rs draaien achter NAT en zijn niet
+    inbound bereikbaar; hun liveness komt daarom uit de push-stroom naar
+    Foundation in plaats van uit een HTTP-probe. (None, None) = nog nooit
+    gezien. Gooit FoundationIngestError als Foundation onbereikbaar is.
+    """
+    objects = await foundation_ingest.fetch_objects()
+    newest_epoch: Optional[float] = None
+    newest_at: Optional[str] = None
+    for obj in objects:
+        if str(obj.get(match_field)) != str(match_value):
+            continue
+        ts = obj.get("updated_at") or obj.get("ingested_at")
+        epoch = _parse_epoch(ts)
+        if epoch is None:
+            continue
+        if newest_epoch is None or epoch > newest_epoch:
+            newest_epoch, newest_at = epoch, ts
+    if newest_epoch is None:
+        return None, None
+    return newest_at, max(0.0, time.time() - newest_epoch)
 
 class RegistryManager:
     def __init__(self):
@@ -137,6 +177,21 @@ class RegistryManager:
         
         components_def = self._raw_registry.get("components", [])
 
+        # Feed-gebaseerde componenten (client achter NAT): liveness uit de
+        # Foundation-ingestiefeed i.p.v. een HTTP-probe of Docker-container.
+        feed_activity: Dict[str, Dict[str, Any]] = {}
+        for comp in components_def:
+            if comp.get("status_source") != "foundation-feed":
+                continue
+            match = comp.get("status_match") or {}
+            field = match.get("field") or "source"
+            value = match.get("value", comp.get("id"))
+            try:
+                last_at, age = await _foundation_feed_activity(field, value)
+                feed_activity[comp["id"]] = {"last_activity_at": last_at, "age_seconds": age}
+            except FoundationIngestError as exc:
+                feed_activity[comp["id"]] = {"error": str(exc)}
+
         # Gather all health checks concurrently (met optionele Bearer-auth per component)
         async def fetch_health(comp: Dict[str, Any]):
             endpoint = comp.get("health_endpoint")
@@ -182,8 +237,27 @@ class RegistryManager:
 
             # Determine composite status
             composite_status = "unknown"
+            status_detail: Optional[str] = None
 
-            if comp.get("lifecycle") == "planned":
+            if comp.get("status_source") == "foundation-feed":
+                fa = feed_activity.get(comp["id"]) or {}
+                window = float(comp.get("freshness_window_seconds") or DEFAULT_FRESHNESS_WINDOW_SECONDS)
+                age = fa.get("age_seconds")
+                if fa.get("error"):
+                    composite_status = "unknown"
+                    status_detail = fa["error"]
+                elif age is None:
+                    # Nog nooit een rij gezien: eerlijk onbekend, niet rood.
+                    composite_status = "unknown"
+                    status_detail = "Nog geen activiteit in de Foundation-feed"
+                elif age <= window:
+                    composite_status = "running"
+                else:
+                    # Te oud om te onderscheiden of de client uit staat of
+                    # gewoon idle is: onbekend, nooit valselijk "Gestopt".
+                    composite_status = "unknown"
+                    status_detail = f"Geen activiteit sinds {int(age // 60)} min"
+            elif comp.get("lifecycle") == "planned":
                 # V3-doelcomponent dat nog niet bestaat: nooit rood tonen
                 composite_status = "unknown"
             elif comp.get("runtime") == "pm2":
@@ -218,6 +292,7 @@ class RegistryManager:
             else:
                 composite_status = "stopped"
 
+            fa = feed_activity.get(comp["id"]) or {}
             enriched.append({
                 **comp,
                 "composite_status": composite_status,
@@ -225,6 +300,9 @@ class RegistryManager:
                 "container_stats": stats,
                 "health_check": health_res,
                 "has_ui": bool(comp.get("ui_url")),
+                "last_activity_at": fa.get("last_activity_at"),
+                "activity_age_seconds": fa.get("age_seconds"),
+                "status_detail": status_detail,
             })
             
         return enriched

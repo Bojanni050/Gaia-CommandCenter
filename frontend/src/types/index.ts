@@ -63,6 +63,11 @@ export interface GaiaComponent {
   process_name?: string;
   host_component?: string;
   health_endpoint?: string;
+  status_source?: string;
+  freshness_window_seconds?: number;
+  last_activity_at?: string | null;
+  activity_age_seconds?: number | null;
+  status_detail?: string | null;
   ui_url?: string;
   ui_label?: string;
   config_source?: string;

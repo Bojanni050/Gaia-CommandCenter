@@ -28,6 +28,9 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
     has_ui,
     ui_url,
     ui_label,
+    status_source,
+    activity_age_seconds,
+    status_detail,
   } = component;
 
   const isPlanned = lifecycle === 'planned';
@@ -100,6 +103,13 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
     }
   };
 
+  const formatAge = (seconds: number | null | undefined) => {
+    if (seconds === null || seconds === undefined) return 'onbekend';
+    if (seconds < 90) return 'zojuist';
+    if (seconds < 3600) return `${Math.round(seconds / 60)} min geleden`;
+    return `${(seconds / 3600).toFixed(1)} uur geleden`;
+  };
+
   const handleOpenUi = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (ui_url) {
@@ -157,46 +167,66 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
         </p>
 
         {/* Realtime Metrics & Health */}
-        <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-ink-950/70 p-2.5 rounded-lg border border-ink-800/60 mb-4">
-          <div className="flex items-center gap-2 text-ink-400">
-            <Cpu className="w-3.5 h-3.5 text-gold-500/70" />
-            <span>
-              CPU:{' '}
-              <strong className="text-ink-200">
-                {container_stats ? `${container_stats.cpu_percent}%` : '0.0%'}
-              </strong>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 text-ink-400">
-            <Activity className="w-3.5 h-3.5 text-sage-500/70" />
-            <span>
-              RAM:{' '}
-              <strong className="text-ink-200">
-                {container_stats
-                  ? `${(container_stats.memory_usage / (1024 * 1024)).toFixed(0)} MB`
-                  : 'N/A'}
-              </strong>
-            </span>
-          </div>
-
-          {health_check && (
-            <div className="col-span-2 flex items-center justify-between text-[11px] text-ink-400 pt-1.5 border-t border-ink-800/40">
+        {status_source === 'foundation-feed' ? (
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-ink-950/70 p-2.5 rounded-lg border border-ink-800/60 mb-4">
+            <div className="col-span-2 flex items-center justify-between text-[11px] text-ink-400">
               <span className="flex items-center gap-1.5">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    health_check.status === 'ok' ? 'bg-sage-400' : health_check.status === 'auth' ? 'bg-gold-400' : 'bg-clay-400'
-                  }`}
-                />
-                Health:{' '}
-                <span className="text-ink-300">
-                  {health_check.status === 'ok' ? 'OK' : health_check.status === 'auth' ? 'Auth vereist' : health_check.status === 'degraded' ? 'Degraded' : 'Down'}
-                </span>
+                <Activity className="w-3.5 h-3.5 text-sage-500/70" />
+                Laatste activiteit
               </span>
-              <span className="text-ink-500">{health_check.latency_ms}ms</span>
+              <span className={composite_status === 'running' ? 'text-sage-300' : 'text-ink-400'}>
+                {formatAge(activity_age_seconds)}
+              </span>
             </div>
-          )}
-        </div>
+            {status_detail && (
+              <div className="col-span-2 text-[11px] text-ink-500">{status_detail}</div>
+            )}
+            <div className="col-span-2 text-[11px] text-ink-500 pt-1.5 border-t border-ink-800/40">
+              Bron: Foundation-ingestiefeed (client achter NAT)
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-ink-950/70 p-2.5 rounded-lg border border-ink-800/60 mb-4">
+            <div className="flex items-center gap-2 text-ink-400">
+              <Cpu className="w-3.5 h-3.5 text-gold-500/70" />
+              <span>
+                CPU:{' '}
+                <strong className="text-ink-200">
+                  {container_stats ? `${container_stats.cpu_percent}%` : '0.0%'}
+                </strong>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-ink-400">
+              <Activity className="w-3.5 h-3.5 text-sage-500/70" />
+              <span>
+                RAM:{' '}
+                <strong className="text-ink-200">
+                  {container_stats
+                    ? `${(container_stats.memory_usage / (1024 * 1024)).toFixed(0)} MB`
+                    : 'N/A'}
+                </strong>
+              </span>
+            </div>
+
+            {health_check && (
+              <div className="col-span-2 flex items-center justify-between text-[11px] text-ink-400 pt-1.5 border-t border-ink-800/40">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      health_check.status === 'ok' ? 'bg-sage-400' : health_check.status === 'auth' ? 'bg-gold-400' : 'bg-clay-400'
+                    }`}
+                  />
+                  Health:{' '}
+                  <span className="text-ink-300">
+                    {health_check.status === 'ok' ? 'OK' : health_check.status === 'auth' ? 'Auth vereist' : health_check.status === 'degraded' ? 'Degraded' : 'Down'}
+                  </span>
+                </span>
+                <span className="text-ink-500">{health_check.latency_ms}ms</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Action Footer */}

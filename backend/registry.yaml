@@ -130,11 +130,16 @@ components:
     category: "capture"
     layer: "clients"
     epistemic: "observation"
-    lifecycle: "planned"
-    repo: "capture-rs (doelrepository)"
-    description: "V3-doelcomponent: lokale scherm- en activiteitenopname (Rust) aan clientzijde. Voedt de Ingestie Gateway."
+    lifecycle: "active"
+    repo: "capture-rs"
+    description: "Windows-client (Rust): lokale scherm- en activiteitenopname aan clientzijde. Draait op de PC, niet op de VPS; voedt de Ingestie Gateway."
+    status_source: "foundation-feed"
+    status_match:
+      field: "source"
+      value: "capture-rs"
+    freshness_window_seconds: 900
     configurable: false
-    v3_note: "Nog niet aanwezig in deze checkout; geen monitoring tot implementatie"
+    v3_note: "Client achter NAT: geen inbound bereikbaarheid, dus liveness komt uit de Foundation-ingestiefeed (nieuwste source=capture-rs). Geen open poort nodig; idle toont 'onbekend', nooit valselijk 'gestopt'."
 
   - id: "web"
     name: "Gaia Web"
