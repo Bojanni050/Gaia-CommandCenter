@@ -28,6 +28,8 @@ class ComponentUpdateRequest(BaseModel):
     ui_label: Optional[str] = None
     config_source: Optional[str] = None
     configurable: Optional[bool] = None
+    opt_in: Optional[bool] = None
+    opt_in_hint: Optional[str] = None
 
 class ComponentCreateRequest(BaseModel):
     id: Optional[str] = None
@@ -50,6 +52,8 @@ class ComponentCreateRequest(BaseModel):
     ui_label: Optional[str] = None
     config_source: Optional[str] = None
     configurable: bool = False
+    opt_in: bool = False
+    opt_in_hint: Optional[str] = None
 
 class TestEndpointRequest(BaseModel):
     endpoint: str

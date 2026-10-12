@@ -12,6 +12,8 @@ version: "2.0"
 #   epistemic: agency | observation | interpretation | hypothesis | execution | presence
 #   lifecycle: active | interim | planned
 #   health_auth_env: naam van env-var met Bearer-token (optioneel)
+#   opt_in: true + opt_in_hint: faculteit die standaard uit staat (feature-flag);
+#     de kaart toont "Uit (opt-in)" i.p.v. groen. opt_in_hint noemt de env om te starten.
 
 # HARNAS — Gaia Cloud: agency, SOUL, orkestratie, Response Engine
 components:
@@ -121,6 +123,8 @@ components:
     repo: "Gaia-Cloud (services/gaia-api/src/kairos)"
     description: "Narratieve-tijdsynthese: vouwt een cluster van rauwe Foundation-observaties tot één episode (interpretatie) die Cognition bezit, met sources terug naar de observaties waaruit hij is opgebouwd. Logos' jongere broer."
     host_component: "core"
+    opt_in: true
+    opt_in_hint: "GAIA_KAIROS_ENABLED=true"
     ui_url: "http://100.65.0.15:8891/admin"
     ui_label: "Gaia Admin (Kairos-rol)"
     configurable: false

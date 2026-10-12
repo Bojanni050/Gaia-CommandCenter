@@ -67,6 +67,13 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
             <span>Gestopt</span>
           </div>
         );
+      case 'disabled':
+        return (
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-ink-900 border border-ink-700/60 text-ink-400 text-xs font-mono" title={status_detail || undefined}>
+            <span className="w-1.5 h-1.5 rounded-full bg-ink-500" />
+            <span>Uit (opt-in)</span>
+          </div>
+        );
       default:
         return (
           <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-ink-900 border border-ink-800 text-ink-400 text-xs font-mono">
@@ -223,6 +230,12 @@ export const GaiaComponentCard: React.FC<GaiaComponentCardProps> = ({
                   </span>
                 </span>
                 <span className="text-ink-500">{health_check.latency_ms}ms</span>
+              </div>
+            )}
+
+            {status_detail && (
+              <div className="col-span-2 text-[11px] text-ink-500 pt-1.5 border-t border-ink-800/40">
+                {status_detail}
               </div>
             )}
           </div>

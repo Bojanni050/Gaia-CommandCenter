@@ -260,6 +260,13 @@ class RegistryManager:
             elif comp.get("lifecycle") == "planned":
                 # V3-doelcomponent dat nog niet bestaat: nooit rood tonen
                 composite_status = "unknown"
+            elif comp.get("opt_in"):
+                # Faculteit die standaard uit staat (feature-flag). De registry
+                # kent geen live signaal voor de vlag, dus tonen we eerlijk
+                # "uit (opt-in)" i.p.v. een misleidend groen "ok".
+                composite_status = "disabled"
+                hint = comp.get("opt_in_hint")
+                status_detail = "Opt-in: standaard uit" + (f" — start met {hint}" if hint else "")
             elif comp.get("runtime") == "pm2":
                 # Special handling for host processes like Chronicle
                 if health_res and health_res.get("status") == "ok":

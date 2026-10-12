@@ -34,6 +34,8 @@ interface ComponentFormData {
   layer: string;
   epistemic: string;
   repo: string;
+  opt_in: boolean;
+  opt_in_hint: string;
 }
 
 interface TestResult {
@@ -73,6 +75,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     layer: '',
     epistemic: '',
     repo: '',
+    opt_in: false,
+    opt_in_hint: '',
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -93,6 +97,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         layer: c.layer || '',
         epistemic: c.epistemic || '',
         repo: c.repo || '',
+        opt_in: !!c.opt_in,
+        opt_in_hint: c.opt_in_hint || '',
       };
     });
     setFormDataMap(initialMap);
@@ -144,6 +150,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         layer: orig.layer || '',
         epistemic: orig.epistemic || '',
         repo: orig.repo || '',
+        opt_in: !!orig.opt_in,
+        opt_in_hint: orig.opt_in_hint || '',
       },
     }));
 
@@ -239,6 +247,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         layer: '',
         epistemic: '',
         repo: '',
+        opt_in: false,
+        opt_in_hint: '',
       });
       onRefreshComponents();
     } catch (err: any) {
@@ -388,6 +398,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               layer: comp.layer || '',
               epistemic: comp.epistemic || '',
               repo: comp.repo || '',
+              opt_in: !!comp.opt_in,
+              opt_in_hint: comp.opt_in_hint || '',
             };
 
             const isDirty = dirtyMap[comp.id] || false;
@@ -712,6 +724,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                       />
                       <span>Heeft runtime config surface</span>
                     </label>
+                  </div>
+
+                  {/* Opt-in toggle — faculteit die standaard uit staat */}
+                  <div className="pt-2.5 space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-ink-300 font-mono select-none">
+                      <input
+                        type="checkbox"
+                        checked={form.opt_in}
+                        onChange={(e) => handleFieldChange(comp.id, 'opt_in', e.target.checked)}
+                        className="rounded bg-ink-950 border-ink-700 text-gold-500 focus:ring-0 cursor-pointer"
+                      />
+                      <span>Opt-in (draait standaard niet; toont "Uit (opt-in)")</span>
+                    </label>
+                    {form.opt_in && (
+                      <input
+                        type="text"
+                        value={form.opt_in_hint}
+                        onChange={(e) => handleFieldChange(comp.id, 'opt_in_hint', e.target.value)}
+                        placeholder="bv. GAIA_KAIROS_ENABLED=true"
+                        className="w-full bg-ink-950/80 border border-ink-800 rounded-lg px-3 py-1.5 text-xs text-ink-100 placeholder-ink-600 focus:outline-none focus:border-gold-400/50 font-mono"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

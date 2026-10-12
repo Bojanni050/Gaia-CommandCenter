@@ -1,4 +1,4 @@
-export type CompositeStatus = 'running' | 'stopped' | 'unhealthy' | 'starting' | 'unknown' | 'ok';
+export type CompositeStatus = 'running' | 'stopped' | 'unhealthy' | 'starting' | 'unknown' | 'ok' | 'disabled';
 
 export interface ContainerStats {
   cpu_percent: number;
@@ -54,6 +54,8 @@ export interface GaiaComponent {
   layer?: GaiaLayer;
   epistemic?: GaiaEpistemic;
   lifecycle?: GaiaLifecycle;
+  opt_in?: boolean;
+  opt_in_hint?: string;
   repo?: string;
   v3_note?: string;
   health_auth_env?: string;
