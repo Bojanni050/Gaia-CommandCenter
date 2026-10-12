@@ -241,6 +241,9 @@ export interface RecallLatency {
   source: string;
   endpoint: string;
   count: number;
+  attempts?: number;
+  failed?: RecallLatencyThreshold;
+  status_classes?: string[];
   sum_seconds?: number;
   mean_ms?: number | null;
   percentiles_ms: {

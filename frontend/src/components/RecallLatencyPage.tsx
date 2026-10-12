@@ -94,13 +94,18 @@ export const RecallLatencyPage: React.FC = () => {
               <Activity className="w-3.5 h-3.5 text-sage-400" />
               <span>Percentielen (bovengrens van de bucket)</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
               <Stat label="gemiddelde" value={ms(data?.mean_ms)} accent="text-ink-200" />
               <Stat label="p50" value={ms(data?.percentiles_ms?.p50)} accent="text-sage-300" />
               <Stat label="p90" value={ms(data?.percentiles_ms?.p90)} accent="text-sage-300" />
               <Stat label="p95" value={ms(data?.percentiles_ms?.p95)} accent="text-gold-300" />
               <Stat label="p99" value={ms(data?.percentiles_ms?.p99)} accent="text-clay-300" />
               <Stat label="recalls" value={String(data?.count ?? '—')} accent="text-ink-200" />
+              <Stat
+                label="mislukt"
+                value={`${data?.failed?.count ?? 0} (${data?.failed?.percent ?? 0}%)`}
+                accent={(data?.failed?.count ?? 0) > 0 ? 'text-clay-300' : 'text-sage-300'}
+              />
             </div>
           </div>
 
@@ -162,6 +167,10 @@ export const RecallLatencyPage: React.FC = () => {
             Cumulatief sinds de laatste Hindsight-start &mdash; een herstart zet de reeks op nul.
             {data?.scraped_at ? ` Laatst gelezen: ${data.scraped_at}.` : ''}
             {' '}Buckets zijn Hindsight's eigen grenzen; percentielen zijn de bovengrens van de bucket.
+            {' '}De latency-statistiek gaat over de geslaagde recalls (2xx), dus óók een trage die pas
+            na 5 s slaagt telt mee; mislukte pogingen komen uit dezelfde reeks. Hindsight's
+            {' '}<code className="font-mono">hindsight.call_failed</code>-logregel in gaia-api toont alleen
+            wélke call faalde en waarom &mdash; niet de verdeling.
           </p>
         </>
       )}

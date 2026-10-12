@@ -29,7 +29,7 @@ Het **Gaia Server Control Center** stelt Gaia als autonoom concept centraal, met
    - Toegang beveiligd met beheerdersauthenticatie (JWT sessie & HTTP-only cookies).
    - Docker socket (`/var/run/docker.sock`) blijft strikt server-side en wordt nooit blootgesteld aan de browser.
 9. **Recall-latency-verdeling (Hindsight, read-only)**:
-   - Leest Hindsight's Prometheus-histogram (`GET {HINDSIGHT_URL}/metrics`, endpoint `memories/recall`) en toont de *staart* — niet alleen het gemiddelde: percentielen (p50/p90/p95/p99), het aandeel boven de 4 s en 8 s, en de volledige bucket-verdeling. Cumulatief sinds de laatste Hindsight-start (een herstart zet de reeks op nul). Hindsight is Tailscale-gebonden en kent geen auth; de backend leest server-side, de browser ziet `:8888` nooit.
+   - Leest Hindsight's Prometheus-histogram (`GET {HINDSIGHT_URL}/metrics`, endpoint `memories/recall`) en toont de *staart* — niet alleen het gemiddelde: percentielen (p50/p90/p95/p99), het aandeel boven de 4 s en 8 s, en de volledige bucket-verdeling. Cumulatief sinds de laatste Hindsight-start (een herstart zet de reeks op nul). De duur-statistiek komt van de **geslaagde** recalls (2xx) — dus óók een trage die pas na 5 s slaagt telt mee — en het faalaandeel komt uit dezelfde reeks, zodat "hoe traag" en "hoe vaak mislukt" één bron hebben. Hindsight is Tailscale-gebonden en kent geen auth; de backend leest server-side, de browser ziet `:8888` nooit.
 
 ---
 
