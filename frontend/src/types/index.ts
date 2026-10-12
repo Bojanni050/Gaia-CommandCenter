@@ -285,6 +285,24 @@ export interface KairosStats {
   latest: string | null;
 }
 
+// Eén rauwe Foundation-observatie (ingest_object) — de bron achter een episode.
+export interface IngestObject {
+  id?: string;
+  object_type?: string;
+  source?: string;
+  title?: string;
+  content?: string;
+  source_provider?: string;
+  url?: string;
+  tags?: string[];
+  occurred_at?: string;
+  ingested_at?: string;
+  content_length?: number;
+  has_turns?: boolean;
+  turns?: Array<{ role?: string; text?: string }>;
+  [key: string]: unknown;
+}
+
 export interface LogAnalysisReport {
   summary: {
     health_score: number;

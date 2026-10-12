@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { KairosEpisode, KairosStats } from '../types';
+import { SourceModal } from './SourceModal';
 
 // Kairos synthetiseert narratieve episodes uit de rauwe Foundation-observaties;
 // Cognition bezit ze. Deze view volgt ze read-only — elke episode is een
@@ -32,6 +33,7 @@ export const KairosPage: React.FC = () => {
   const [since, setSince] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [sourceRef, setSourceRef] = useState<string | null>(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -292,13 +294,19 @@ export const KairosPage: React.FC = () => {
                       {e.sources?.length > 0 && (
                         <div className="sm:col-span-2">
                           <div className="text-ink-500 mb-1 flex items-center gap-1.5">
-                            <Link2 className="w-3 h-3" /> Herkomst (sources)
+                            <Link2 className="w-3 h-3" /> Herkomst (sources) &mdash; klik om de ruwe observatie te bekijken
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {e.sources.map((s) => (
-                              <span key={s} className="px-1.5 py-0.5 rounded bg-ink-900 border border-ink-700/50 text-sage-300/90">
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={(ev) => { ev.stopPropagation(); setSourceRef(s); }}
+                                className="px-1.5 py-0.5 rounded bg-ink-900 border border-ink-700/50 text-sage-300/90 hover:text-sage-200 hover:border-sage-600/60 hover:bg-ink-850 transition-colors cursor-pointer font-mono text-[10px]"
+                                title="Bekijk de rauwe Foundation-observatie"
+                              >
                                 {s}
-                              </span>
+                              </button>
                             ))}
                           </div>
                         </div>
@@ -311,6 +319,8 @@ export const KairosPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <SourceModal sourceRef={sourceRef} onClose={() => setSourceRef(null)} />
     </div>
   );
 };

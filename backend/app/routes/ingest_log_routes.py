@@ -53,3 +53,16 @@ async def ingest_log_stats(current_user: str = Depends(get_current_user)):
         raise HTTPException(status_code=502, detail=str(exc))
 
     return build_stats([map_object(o) for o in objects])
+
+
+@router.get("/{source_ref}", response_model=Dict[str, Any])
+async def get_ingest_object(source_ref: str, current_user: str = Depends(get_current_user)):
+    """Eén rauwe observatie (ingest_object) op id of ref — bv. `foundation:<uuid>`.
+
+    Voor de Kairos-bron-drilldown: van een episode naar de observatie waaruit hij
+    is opgebouwd.
+    """
+    try:
+        return await foundation_ingest.fetch_object(source_ref)
+    except FoundationIngestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))

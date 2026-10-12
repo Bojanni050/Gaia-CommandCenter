@@ -28,6 +28,15 @@ class FoundationIngestError(Exception):
     """De ingestie-log van Foundation kon niet worden opgehaald."""
 
 
+def strip_source_ref(ref: str) -> str:
+    """`foundation:<uuid>` (of legacy `chronicle:`/`ingest:`) → de kale object-id."""
+    s = str(ref or "").strip()
+    for prefix in ("foundation:", "chronicle:", "ingest:"):
+        if s.startswith(prefix):
+            s = s[len(prefix):]
+    return s.strip()
+
+
 class FoundationIngestClient:
     """Dunne read-only client op Foundation's GET /api/ingest-logs."""
 
@@ -93,6 +102,24 @@ class FoundationIngestClient:
 
         self._cache = {"ts": now, "objects": objects}
         return objects
+
+    async def fetch_object(self, ref: str) -> Dict[str, Any]:
+        """Eén ingest_object op id — de rauwe observatie achter een Kairos-bron.
+
+        Accepteert de volledige ref (`foundation:<uuid>`) of de kale uuid.
+        Foundation antwoordt met `{ object: {...}, ... }`.
+        """
+        object_id = strip_source_ref(ref)
+        if not object_id:
+            raise FoundationIngestError("geen object-id opgegeven")
+        data = await self._get(f"/api/ingest-logs/{object_id}")
+        if isinstance(data, dict):
+            obj = data.get("object")
+            if isinstance(obj, dict):
+                return obj
+            if data.get("id"):
+                return data
+        raise FoundationIngestError("Foundation gaf geen object terug.")
 
 
 def map_object(obj: Dict[str, Any]) -> Dict[str, Any]:

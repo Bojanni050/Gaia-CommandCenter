@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisode, KairosStats } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisode, KairosStats, IngestObject } from '../types';
 
 const API_BASE = '/api';
 
@@ -214,6 +214,11 @@ class ApiService {
 
   async getKairosStats(): Promise<KairosStats> {
     return this.request<KairosStats>('/kairos/stats');
+  }
+
+  // De rauwe Foundation-observatie achter een Kairos-bron (`foundation:<uuid>`)
+  async getIngestObject(sourceRef: string): Promise<IngestObject> {
+    return this.request<IngestObject>(`/ingest-logs/${encodeURIComponent(sourceRef)}`);
   }
 }
 
