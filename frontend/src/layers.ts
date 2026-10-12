@@ -10,7 +10,7 @@ export const LAYER_META: Record<string, { title: string; subtitle: string }> = {
   },
   geheugenpijp: {
     title: 'Geheugenpijp',
-    subtitle: 'Foundation (observation) → Hindsight (interpretation) → Logos (beoordeling). Eén richting.',
+    subtitle: 'Foundation (observation) → Kairos (narratieve episodes) → Hindsight/Cognition (interpretation) → Logos (beoordeling). Eén richting.',
   },
   capabilities: {
     title: 'Capabilities',

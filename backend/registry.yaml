@@ -112,6 +112,20 @@ components:
     configurable: false
     v3_note: "V3-eigenaarschap van hypothesevorming vs. opslag (Logos/Hindsight/cognition) is nog een open besluit"
 
+  - id: "kairos"
+    name: "Kairos"
+    category: "memory"
+    layer: "geheugenpijp"
+    epistemic: "interpretation"
+    lifecycle: "interim"
+    repo: "Gaia-Cloud (services/gaia-api/src/kairos)"
+    description: "Narratieve-tijdsynthese: vouwt een cluster van rauwe Foundation-observaties tot één episode (interpretatie) die Cognition bezit, met sources terug naar de observaties waaruit hij is opgebouwd. Logos' jongere broer."
+    host_component: "core"
+    ui_url: "http://100.65.0.15:8891/admin"
+    ui_label: "Gaia Admin (Kairos-rol)"
+    configurable: false
+    v3_note: "Draait in de gaia-api-container (geen eigen service, net als Logos). Standaard uit: GAIA_KAIROS_ENABLED=true start de worker, modelrol 'kairos' in de admin. Episodes zijn te bekijken in de Kairos-tab."
+
   - id: "mcp"
     name: "MCP Server"
     category: "integration"
