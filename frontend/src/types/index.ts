@@ -223,6 +223,38 @@ export interface HypothesisStats {
   kinds: string[];
 }
 
+// Recall-latency — Hindsight's Prometheus-histogram (read-only)
+export interface RecallLatencyBucket {
+  le_seconds: number | null;
+  le_label: string;
+  cumulative: number;
+  count: number;
+}
+
+export interface RecallLatencyThreshold {
+  count: number;
+  percent: number;
+}
+
+export interface RecallLatency {
+  available: boolean;
+  source: string;
+  endpoint: string;
+  count: number;
+  sum_seconds?: number;
+  mean_ms?: number | null;
+  percentiles_ms: {
+    p50?: number | null;
+    p90?: number | null;
+    p95?: number | null;
+    p99?: number | null;
+  };
+  thresholds: Record<string, RecallLatencyThreshold>;
+  buckets: RecallLatencyBucket[];
+  scraped_at?: string;
+  note?: string;
+}
+
 export interface LogAnalysisReport {
   summary: {
     health_score: number;

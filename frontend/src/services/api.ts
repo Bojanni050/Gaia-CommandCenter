@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency } from '../types';
 
 const API_BASE = '/api';
 
@@ -191,6 +191,11 @@ class ApiService {
 
   async getHypothesisStats(): Promise<HypothesisStats> {
     return this.request<HypothesisStats>('/hypotheses/stats');
+  }
+
+  // Recall-latency — Hindsight's Prometheus-histogram (read-only)
+  async getRecallLatency(force: boolean = false): Promise<RecallLatency> {
+    return this.request<RecallLatency>(`/recall-latency${force ? '?force=true' : ''}`);
   }
 }
 

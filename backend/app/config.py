@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     COGNITION_BANK_ID: str = os.getenv("COGNITION_BANK_ID", "gaia")
     COGNITION_HTTP_TIMEOUT_SECONDS: float = float(os.getenv("COGNITION_HTTP_TIMEOUT_SECONDS", "5"))
 
+    # Recall-latency — de bron is Hindsight's Prometheus /metrics (de
+    # recall-histogram `hindsight_http_duration_seconds`). Hindsight is
+    # Tailscale-gebonden en kent geen auth (net als Cognition).
+    HINDSIGHT_URL: str = os.getenv(
+        "HINDSIGHT_URL", f"http://{os.getenv('TAILSCALE_HOST', '100.65.0.15')}:8888"
+    )
+    HINDSIGHT_HTTP_TIMEOUT_SECONDS: float = float(os.getenv("HINDSIGHT_HTTP_TIMEOUT_SECONDS", "5"))
+
     class Config:
         env_file = ".env"
         extra = "ignore"

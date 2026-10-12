@@ -1,10 +1,10 @@
 import React from 'react';
-import { Activity, RefreshCw, LogOut, Server, Layers, Box, Shield, Settings, FileSearch, Inbox, Lightbulb } from 'lucide-react';
+import { Activity, RefreshCw, LogOut, Server, Layers, Box, Shield, Settings, FileSearch, Inbox, Lightbulb, Gauge } from 'lucide-react';
 import { AuthStatus, SystemMetrics } from '../types';
 
 interface NavbarProps {
-  activeTab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses';
-  onTabChange: (tab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses') => void;
+  activeTab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall';
+  onTabChange: (tab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall') => void;
   systemMetrics: SystemMetrics | null;
   authStatus: AuthStatus | null;
   onRefresh: () => void;
@@ -122,6 +122,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Lightbulb className="w-3.5 h-3.5" />
               Hypothesen
+            </button>
+            <button
+              onClick={() => onTabChange('recall')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                activeTab === 'recall'
+                  ? 'bg-ink-800 text-gold-300 shadow-sm border border-gold-400/20'
+                  : 'text-ink-400 hover:text-ink-200 hover:bg-ink-800/50'
+              }`}
+            >
+              <Gauge className="w-3.5 h-3.5" />
+              Recall-latency
             </button>
             <button
               onClick={() => onTabChange('settings')}
