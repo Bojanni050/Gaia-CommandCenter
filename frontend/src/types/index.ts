@@ -258,6 +258,31 @@ export interface RecallLatency {
   note?: string;
 }
 
+// Kairos — afgeleide narratieve episodes (Cognition, read-only)
+export interface KairosEpisode {
+  id: string;
+  bank_id: string;
+  start_time: string;
+  end_time: string;
+  summary: string;
+  primary_app: string;
+  involved_apps: string[];
+  epistemic_status: string;
+  sources: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KairosStats {
+  total: number;
+  by_primary_app: Record<string, number>;
+  apps: string[];
+  with_sources: number;
+  without_sources: number;
+  earliest: string | null;
+  latest: string | null;
+}
+
 export interface LogAnalysisReport {
   summary: {
     health_score: number;

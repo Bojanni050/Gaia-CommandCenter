@@ -14,7 +14,8 @@ from app.routes import (
     logs_routes,
     ingest_log_routes,
     hypotheses_routes,
-    recall_latency_routes
+    recall_latency_routes,
+    kairos_routes
 )
 
 app = FastAPI(
@@ -41,6 +42,7 @@ app.include_router(logs_routes.router, prefix="/api")
 app.include_router(ingest_log_routes.router, prefix="/api")
 app.include_router(hypotheses_routes.router, prefix="/api")
 app.include_router(recall_latency_routes.router, prefix="/api")
+app.include_router(kairos_routes.router, prefix="/api")
 
 @app.get("/api/health")
 async def health_check():

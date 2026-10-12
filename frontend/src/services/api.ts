@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisode, KairosStats } from '../types';
 
 const API_BASE = '/api';
 
@@ -196,6 +196,24 @@ class ApiService {
   // Recall-latency — Hindsight's Prometheus-histogram (read-only)
   async getRecallLatency(force: boolean = false): Promise<RecallLatency> {
     return this.request<RecallLatency>(`/recall-latency${force ? '?force=true' : ''}`);
+  }
+
+  // Kairos — afgeleide narratieve episodes (Cognition, read-only)
+  async getKairosEpisodes(params: {
+    q?: string;
+    primary_app?: string;
+    since?: string;
+    limit?: number;
+  }): Promise<KairosEpisode[]> {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') qs.set(k, String(v));
+    });
+    return this.request<KairosEpisode[]>(`/kairos/episodes?${qs.toString()}`);
+  }
+
+  async getKairosStats(): Promise<KairosStats> {
+    return this.request<KairosStats>('/kairos/stats');
   }
 }
 

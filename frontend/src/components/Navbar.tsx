@@ -1,10 +1,10 @@
 import React from 'react';
-import { Activity, RefreshCw, LogOut, Server, Layers, Box, Shield, Settings, FileSearch, Inbox, Lightbulb, Gauge } from 'lucide-react';
+import { Activity, RefreshCw, LogOut, Server, Layers, Box, Shield, Settings, FileSearch, Inbox, Lightbulb, Gauge, Clock } from 'lucide-react';
 import { AuthStatus, SystemMetrics } from '../types';
 
 interface NavbarProps {
-  activeTab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall';
-  onTabChange: (tab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall') => void;
+  activeTab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall' | 'kairos';
+  onTabChange: (tab: 'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall' | 'kairos') => void;
   systemMetrics: SystemMetrics | null;
   authStatus: AuthStatus | null;
   onRefresh: () => void;
@@ -133,6 +133,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Gauge className="w-3.5 h-3.5" />
               Recall-latency
+            </button>
+            <button
+              onClick={() => onTabChange('kairos')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                activeTab === 'kairos'
+                  ? 'bg-ink-800 text-gold-300 shadow-sm border border-gold-400/20'
+                  : 'text-ink-400 hover:text-ink-200 hover:bg-ink-800/50'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              Kairos
             </button>
             <button
               onClick={() => onTabChange('settings')}

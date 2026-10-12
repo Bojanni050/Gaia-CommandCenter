@@ -11,13 +11,14 @@ import { LogAnalyzerPage } from './components/LogAnalyzerPage';
 import { IngestLogPage } from './components/IngestLogPage';
 import { HypothesesPage } from './components/HypothesesPage';
 import { RecallLatencyPage } from './components/RecallLatencyPage';
+import { KairosPage } from './components/KairosPage';
 import { api } from './services/api';
 import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus } from './types';
 import { LAYER_META, groupByLayer } from './layers';
 import { ExternalLink, Layers, Box, Activity, AlertCircle, Compass } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'containers' | 'settings' | 'logs' | 'ingest' | 'hypotheses' | 'recall' | 'kairos'>('overview');
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null);
   const [components, setComponents] = useState<GaiaComponent[]>([]);
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
@@ -402,6 +403,10 @@ export const App: React.FC = () => {
         {/* TAB 8: RECALL-LATENCY (Hindsight /metrics histogram) */}
         {activeTab === 'recall' && (
           <RecallLatencyPage />
+        )}
+        {/* TAB 9: KAIROS EPISODES (Cognition, read-only) */}
+        {activeTab === 'kairos' && (
+          <KairosPage />
         )}
       </main>
 
