@@ -70,6 +70,9 @@ export interface GaiaComponent {
   last_activity_at?: string | null;
   activity_age_seconds?: number | null;
   status_detail?: string | null;
+  // Machine-readable reden (alleen bij feed-gebaseerde componenten): 'active',
+  // 'no-activity' en 'stale' zijn geen storing, 'feed-error' wel.
+  status_reason?: 'active' | 'no-activity' | 'stale' | 'feed-error' | string | null;
   ui_url?: string;
   ui_label?: string;
   config_source?: string;

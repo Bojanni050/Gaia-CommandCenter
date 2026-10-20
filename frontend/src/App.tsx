@@ -131,10 +131,20 @@ export const App: React.FC = () => {
     (c) => c.composite_status === 'running' || c.composite_status === 'ok'
   ).length;
 
-  // Alles wat niet groen is: noemt de badge bij naam zodat je niet hoeft te zoeken.
+  // Stilte in de Foundation-feed (client achter NAT, simpelweg idle) is geen
+  // storing: dat telt niet als aandacht, maar blijft wel zichtbaar als "stil".
+  const isSilentFeed = (c: GaiaComponent) =>
+    c.composite_status === 'unknown' &&
+    (c.status_reason === 'no-activity' || c.status_reason === 'stale');
+
   const attentionComponents = components.filter(
-    (c) => c.composite_status !== 'running' && c.composite_status !== 'ok'
+    (c) =>
+      c.composite_status !== 'running' &&
+      c.composite_status !== 'ok' &&
+      !isSilentFeed(c)
   );
+
+  const silentComponents = components.filter(isSilentFeed);
 
   const layeredComponents = groupByLayer(components);
 
@@ -226,6 +236,21 @@ export const App: React.FC = () => {
                       {attentionComponents.map((c) => c.name).join(', ')}
                     </span>
                   </button>
+                )}
+                {silentComponents.length > 0 && (
+                  <div
+                    title={silentComponents
+                      .map((c) => `${c.name} — ${c.status_detail || 'geen signaal'}`)
+                      .join('\n')}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-ink-900/80 text-ink-400 border border-ink-700/70 shadow-sm"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-ink-500" />
+                    <span>{silentComponents.length} Stil</span>
+                    <span className="text-ink-600">&middot;</span>
+                    <span className="max-w-[260px] truncate text-ink-300">
+                      {silentComponents.map((c) => c.name).join(', ')}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

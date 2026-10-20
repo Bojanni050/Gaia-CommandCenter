@@ -238,6 +238,9 @@ class RegistryManager:
             # Determine composite status
             composite_status = "unknown"
             status_detail: Optional[str] = None
+            # Machine-readable reden naast het menselijke status_detail, zodat de
+            # UI kan onderscheiden tussen "stil" (geen storing) en een echte fout.
+            status_reason: Optional[str] = None
 
             if comp.get("status_source") == "foundation-feed":
                 fa = feed_activity.get(comp["id"]) or {}
@@ -246,17 +249,21 @@ class RegistryManager:
                 if fa.get("error"):
                     composite_status = "unknown"
                     status_detail = fa["error"]
+                    status_reason = "feed-error"
                 elif age is None:
                     # Nog nooit een rij gezien: eerlijk onbekend, niet rood.
                     composite_status = "unknown"
                     status_detail = "Nog geen activiteit in de Foundation-feed"
+                    status_reason = "no-activity"
                 elif age <= window:
                     composite_status = "running"
+                    status_reason = "active"
                 else:
                     # Te oud om te onderscheiden of de client uit staat of
                     # gewoon idle is: onbekend, nooit valselijk "Gestopt".
                     composite_status = "unknown"
                     status_detail = f"Geen activiteit sinds {int(age // 60)} min"
+                    status_reason = "stale"
             elif comp.get("lifecycle") == "planned":
                 # V3-doelcomponent dat nog niet bestaat: nooit rood tonen
                 composite_status = "unknown"
@@ -310,6 +317,7 @@ class RegistryManager:
                 "last_activity_at": fa.get("last_activity_at"),
                 "activity_age_seconds": fa.get("age_seconds"),
                 "status_detail": status_detail,
+                "status_reason": status_reason,
             })
             
         return enriched
