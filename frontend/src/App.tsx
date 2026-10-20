@@ -131,6 +131,11 @@ export const App: React.FC = () => {
     (c) => c.composite_status === 'running' || c.composite_status === 'ok'
   ).length;
 
+  // Alles wat niet groen is: noemt de badge bij naam zodat je niet hoeft te zoeken.
+  const attentionComponents = components.filter(
+    (c) => c.composite_status !== 'running' && c.composite_status !== 'ok'
+  );
+
   const layeredComponents = groupByLayer(components);
 
   return (
@@ -198,11 +203,29 @@ export const App: React.FC = () => {
                   <span className="w-2 h-2 rounded-full status-orb-running" />
                   <span>{runningComponentsCount} Actief</span>
                 </div>
-                {components.length - runningComponentsCount > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-clay-950/70 text-clay-300 border border-clay-700/60 shadow-sm">
+                {attentionComponents.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Eén afwijkend component: meteen het detail open. Meer: naar de registry.
+                      if (attentionComponents.length === 1) {
+                        setSelectedComponent(attentionComponents[0]);
+                      } else {
+                        setActiveTab('components');
+                      }
+                    }}
+                    title={attentionComponents
+                      .map((c) => `${c.name} — ${c.status_detail || c.composite_status}`)
+                      .join('\n')}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-clay-950/70 text-clay-300 border border-clay-700/60 shadow-sm hover:bg-clay-900/70 hover:border-clay-500/60 transition-colors cursor-pointer"
+                  >
                     <span className="w-2 h-2 rounded-full status-orb-unhealthy" />
-                    <span>{components.length - runningComponentsCount} Aandacht</span>
-                  </div>
+                    <span>{attentionComponents.length} Aandacht</span>
+                    <span className="text-clay-500/70">&middot;</span>
+                    <span className="max-w-[260px] truncate text-clay-200">
+                      {attentionComponents.map((c) => c.name).join(', ')}
+                    </span>
+                  </button>
                 )}
               </div>
             </div>
