@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisode, KairosStats, IngestObject } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisodePage, KairosStats, IngestObject } from '../types';
 
 const API_BASE = '/api';
 
@@ -203,13 +203,14 @@ class ApiService {
     q?: string;
     primary_app?: string;
     since?: string;
+    page?: number;
     limit?: number;
-  }): Promise<KairosEpisode[]> {
+  }): Promise<KairosEpisodePage> {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== '') qs.set(k, String(v));
     });
-    return this.request<KairosEpisode[]>(`/kairos/episodes?${qs.toString()}`);
+    return this.request<KairosEpisodePage>(`/kairos/episodes?${qs.toString()}`);
   }
 
   async getKairosStats(): Promise<KairosStats> {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Clock,
   RefreshCw,
@@ -22,9 +22,15 @@ import { SourceModal } from './SourceModal';
 // interpretatie met `sources` terug naar de observaties.
 
 const EPISTEMIC_BADGE = 'bg-sage-950/60 border-sage-700/50 text-sage-300';
+const PAGE_SIZE = 200;
 
 export const KairosPage: React.FC = () => {
   const [items, setItems] = useState<KairosEpisode[]>([]);
+  const [total, setTotal] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  // Aantal geladen pagina's; een ref (geen state) zodat "Laad meer" niet
+  // meteen een volledige herlaad van het hele venster uitlokt.
+  const loadedPage = useRef<number>(1);
   const [stats, setStats] = useState<KairosStats | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,18 +41,41 @@ export const KairosPage: React.FC = () => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
+  const fetchPage = useCallback(
+    (page: number) =>
+      api.getKairosEpisodes({
+        page,
+        limit: PAGE_SIZE,
+        ...(filterQuery ? { q: filterQuery } : {}),
+        ...(primaryApp ? { primary_app: primaryApp } : {}),
+        ...(since ? { since } : {}),
+      }),
+    [filterQuery, primaryApp, since]
+  );
+
   const fetchData = useCallback(() => {
     setLoading(true);
     setError(null);
-    const params: Record<string, string | number> = {};
-    if (filterQuery) params.q = filterQuery;
-    if (primaryApp) params.primary_app = primaryApp;
-    if (since) params.since = since;
-
-    api.getKairosEpisodes(params)
-      .then((data) => setItems(data))
+    // Herlaad het hele geladen venster, zodat nieuwe episodes bovenaan
+    // verschijnen zonder de reeds geladen geschiedenis te verliezen.
+    const pages = Array.from({ length: loadedPage.current }, (_, i) => i + 1);
+    Promise.all(pages.map(fetchPage))
+      .then((responses) => {
+        const seen = new Set<string>();
+        const merged: KairosEpisode[] = [];
+        responses.forEach((r) => {
+          r.items.forEach((ep) => {
+            if (!seen.has(ep.id)) {
+              seen.add(ep.id);
+              merged.push(ep);
+            }
+          });
+        });
+        setItems(merged);
+        setTotal(responses[0]?.total ?? 0);
+        setHasMore(responses[responses.length - 1]?.has_more ?? false);
+      })
       .catch((err: Error) => {
-        setItems([]);
         setError(err.message || 'Kon de Kairos-episodes niet ophalen.');
       })
       .finally(() => setLoading(false));
@@ -54,7 +83,27 @@ export const KairosPage: React.FC = () => {
     api.getKairosStats()
       .then((data) => setStats(data))
       .catch(() => setStats(null));
-  }, [filterQuery, primaryApp, since]);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(() => {
+    const nextPage = loadedPage.current + 1;
+    setLoading(true);
+    setError(null);
+    fetchPage(nextPage)
+      .then((data) => {
+        setItems((prev) => {
+          const seen = new Set(prev.map((e) => e.id));
+          return [...prev, ...data.items.filter((e) => !seen.has(e.id))];
+        });
+        loadedPage.current = nextPage;
+        setTotal(data.total);
+        setHasMore(data.has_more);
+      })
+      .catch((err: Error) => {
+        setError(err.message || 'Kon meer Kairos-episodes niet ophalen.');
+      })
+      .finally(() => setLoading(false));
+  }, [fetchPage]);
 
   useEffect(() => {
     fetchData();
@@ -152,7 +201,10 @@ export const KairosPage: React.FC = () => {
       <div className="glass-panel p-4 border border-ink-800 flex flex-wrap items-center gap-2.5 text-xs font-mono">
         <select
           value={primaryApp}
-          onChange={(e) => setPrimaryApp(e.target.value)}
+          onChange={(e) => {
+            setPrimaryApp(e.target.value);
+            loadedPage.current = 1;
+          }}
           className="bg-ink-950 border border-ink-800 rounded px-2 py-1 text-xs text-sage-300 focus:outline-none focus:border-sage-400/40 cursor-pointer"
           title="Primaire app"
         >
@@ -168,7 +220,10 @@ export const KairosPage: React.FC = () => {
           <input
             type="datetime-local"
             value={since}
-            onChange={(e) => setSince(e.target.value)}
+            onChange={(e) => {
+              setSince(e.target.value);
+              loadedPage.current = 1;
+            }}
             className="bg-transparent text-xs text-ink-300 focus:outline-none"
             title="Vanaf start_time"
           />
@@ -178,7 +233,10 @@ export const KairosPage: React.FC = () => {
           <input
             type="text"
             value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
+            onChange={(e) => {
+              setFilterQuery(e.target.value);
+              loadedPage.current = 1;
+            }}
             placeholder="Zoek in samenvatting, apps of bronnen..."
             className="bg-transparent text-xs text-ink-200 placeholder-ink-600 focus:outline-none w-full"
           />
@@ -207,7 +265,7 @@ export const KairosPage: React.FC = () => {
             <Radio className="w-3.5 h-3.5 text-sage-400" />
             Episodes
           </span>
-          <span>{items.length} getoond (nieuwste eerst)</span>
+          <span>{items.length} van {total} getoond (nieuwste eerst)</span>
         </div>
         <div className="max-h-[60vh] overflow-y-auto divide-y divide-ink-800/60">
           {loading && items.length === 0 ? (
@@ -316,6 +374,18 @@ export const KairosPage: React.FC = () => {
                 </div>
               );
             })
+          )}
+          {hasMore && (
+            <div className="p-3 flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loading}
+                className="btn-ghost text-xs text-sage-300 border border-sage-700/50 hover:bg-sage-500/10 px-3 py-1.5 rounded disabled:opacity-50"
+              >
+                {loading ? 'Laden...' : `Laad meer (${items.length} van ${total})`}
+              </button>
+            </div>
           )}
         </div>
       </div>

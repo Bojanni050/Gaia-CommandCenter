@@ -15,6 +15,7 @@ Bron-endpoint: GET {COGNITION_URL}/v1/banks/{COGNITION_BANK_ID}/episodes
 (gepagineerd; Cognition kapt op 100 per pagina, dus deze client pagineert).
 """
 
+import asyncio
 import time
 from typing import Any, Dict, List, Optional
 
@@ -22,11 +23,15 @@ import httpx
 
 from app.config import settings
 
-# Cognition kapt een pagina op 100; we pagineren tot deze bovengrens.
-EPISODES_CAP = 500
+# Cognition kapt een pagina op 100. We halen de volledige set op (nodig voor
+# de statistieken en voor server-side filtering) en pagineren de client-surface
+# zelf, zodat de UI niet bij een vaste 500 episodes stopt. De cap is alleen een
+# veiligheidsgrens, geen UX-limiet.
+EPISODES_CAP = 20000
 PAGE_SIZE = 100
+_FETCH_CONCURRENCY = 5
 
-_CACHE_TTL_SECONDS = 5.0
+_CACHE_TTL_SECONDS = 30.0
 
 
 class KairosError(Exception):
@@ -38,6 +43,9 @@ class KairosClient:
 
     def __init__(self) -> None:
         self._cache: Dict[str, Any] = {"ts": 0.0, "objects": []}
+        # /episodes en /stats komen vaak samen binnen; één fetch tegelijk
+        # voorkomt dat beide een volledige paginering starten.
+        self._lock = asyncio.Lock()
 
     @property
     def base_url(self) -> str:
@@ -48,17 +56,14 @@ class KairosClient:
     def bank_id(self) -> str:
         return settings.COGNITION_BANK_ID or "gaia"
 
-    async def _page(self, page: int) -> Dict[str, Any]:
+    async def _page(self, client: httpx.AsyncClient, page: int) -> Dict[str, Any]:
         url = f"{self.base_url}/v1/banks/{self.bank_id}/episodes"
         try:
-            async with httpx.AsyncClient(
-                timeout=settings.COGNITION_HTTP_TIMEOUT_SECONDS, follow_redirects=True
-            ) as client:
-                resp = await client.get(
-                    url,
-                    headers={"Accept": "application/json"},
-                    params={"page": page, "limit": PAGE_SIZE},
-                )
+            resp = await client.get(
+                url,
+                headers={"Accept": "application/json"},
+                params={"page": page, "limit": PAGE_SIZE},
+            )
         except httpx.HTTPError as exc:
             raise KairosError(f"Cognition onbereikbaar op {self.base_url}: {exc}") from exc
         if resp.status_code >= 400:
@@ -68,24 +73,59 @@ class KairosClient:
         except ValueError as exc:
             raise KairosError("Cognition gaf geen geldige JSON terug.") from exc
 
+    @staticmethod
+    def _rows(body: Any) -> List[Dict[str, Any]]:
+        rows = body.get("data") if isinstance(body, dict) else None
+        return [r for r in (rows or []) if isinstance(r, dict)]
+
     async def fetch_episodes(self, force: bool = False) -> List[Dict[str, Any]]:
         """Alle episodes (nieuwste eerst), gepagineerd tot EPISODES_CAP."""
         now = time.monotonic()
         if not force and self._cache["objects"] and (now - self._cache["ts"] < _CACHE_TTL_SECONDS):
             return self._cache["objects"]
 
-        collected: List[Dict[str, Any]] = []
-        page = 1
-        while len(collected) < EPISODES_CAP:
-            body = await self._page(page)
-            rows = body.get("data") if isinstance(body, dict) else None
-            rows = [r for r in (rows or []) if isinstance(r, dict)]
-            collected.extend(rows)
-            pagination = body.get("pagination") or {}
-            if not rows or not pagination.get("has_more"):
-                break
-            page += 1
+        async with self._lock:
+            now = time.monotonic()
+            if not force and self._cache["objects"] and (
+                now - self._cache["ts"] < _CACHE_TTL_SECONDS
+            ):
+                return self._cache["objects"]
+            return await self._fetch_all(now)
 
+    async def _fetch_all(self, now: float) -> List[Dict[str, Any]]:
+        collected: List[Dict[str, Any]] = []
+        async with httpx.AsyncClient(
+            timeout=settings.COGNITION_HTTP_TIMEOUT_SECONDS, follow_redirects=True
+        ) as client:
+            first = await self._page(client, 1)
+            collected.extend(self._rows(first))
+            pagination = first.get("pagination") or {}
+            total = pagination.get("total_records")
+
+            if isinstance(total, int) and total > 0:
+                # We kennen het totaal: haal de overige pagina's in kleine
+                # parallelle batches op i.p.v. pagina voor pagina.
+                last_page = min(-(-total // PAGE_SIZE), EPISODES_CAP // PAGE_SIZE)
+                pages = list(range(2, last_page + 1))
+                for start in range(0, len(pages), _FETCH_CONCURRENCY):
+                    batch = pages[start : start + _FETCH_CONCURRENCY]
+                    bodies = await asyncio.gather(*(self._page(client, p) for p in batch))
+                    for body in bodies:
+                        collected.extend(self._rows(body))
+            else:
+                # Geen total_records in de respons: sequentieel doorlopen.
+                page = 2
+                has_more = pagination.get("has_more")
+                while has_more and len(collected) < EPISODES_CAP:
+                    body = await self._page(client, page)
+                    rows = self._rows(body)
+                    collected.extend(rows)
+                    has_more = (body.get("pagination") or {}).get("has_more")
+                    if not rows:
+                        break
+                    page += 1
+
+        collected = collected[:EPISODES_CAP]
         self._cache = {"ts": now, "objects": collected}
         return collected
 

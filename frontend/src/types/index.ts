@@ -278,6 +278,15 @@ export interface KairosEpisode {
   updated_at: string;
 }
 
+// Eén pagina episodes; `total` is het volledige (gefilterde) aantal.
+export interface KairosEpisodePage {
+  items: KairosEpisode[];
+  total: number;
+  page: number;
+  limit: number;
+  has_more: boolean;
+}
+
 export interface KairosStats {
   total: number;
   by_primary_app: Record<string, number>;
