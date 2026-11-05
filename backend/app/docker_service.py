@@ -196,6 +196,28 @@ class DockerService:
             logger.error(f"Error fetching container {name_or_id}: {e}")
             return None
 
+    def get_container_env_flag(self, name_or_id: str, key: str) -> Optional[bool]:
+        """Lees één boolean env-flag uit een container zonder andere waarden te lekken.
+
+        Geeft None terug als Docker niet beschikbaar is of de container niet
+        bestaat (status onbekend). False betekent: variabele ontbreekt of staat
+        op iets anders dan "true".
+        """
+        if not self.is_available:
+            return None
+        try:
+            c = self._client.containers.get(name_or_id)
+            prefix = f"{key}="
+            for item in c.attrs.get("Config", {}).get("Env", []) or []:
+                if item.startswith(prefix):
+                    return item[len(prefix):].strip().lower() == "true"
+            return False
+        except NotFound:
+            return None
+        except Exception as e:
+            logger.error(f"Error reading env flag {key} from {name_or_id}: {e}")
+            return None
+
     def _parse_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
         """Parse raw Docker stats dictionary into clean percentages and byte counts."""
         try:

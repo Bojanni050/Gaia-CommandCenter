@@ -219,7 +219,7 @@ export const KairosPage: React.FC = () => {
               <p>Geen episodes gevonden{filterQuery || primaryApp || since ? ' die voldoen aan de filters' : ''}.</p>
               {!filterQuery && !primaryApp && !since && (
                 <p className="mt-2 text-ink-600">
-                  De Kairos-worker staat standaard uit (<code className="font-mono">GAIA_KAIROS_ENABLED=true</code> op de VPS om episodes te laten ontstaan).
+                  De Kairos-worker draait alleen met <code className="font-mono">GAIA_KAIROS_ENABLED=true</code> op de VPS; nieuwe episodes verschijnen zodra er genoeg observaties zijn verwerkt.
                 </p>
               )}
             </div>

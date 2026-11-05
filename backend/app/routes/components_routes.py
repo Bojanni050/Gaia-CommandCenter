@@ -30,6 +30,7 @@ class ComponentUpdateRequest(BaseModel):
     configurable: Optional[bool] = None
     opt_in: Optional[bool] = None
     opt_in_hint: Optional[str] = None
+    status_env: Optional[str] = None
 
 class ComponentCreateRequest(BaseModel):
     id: Optional[str] = None
@@ -54,6 +55,7 @@ class ComponentCreateRequest(BaseModel):
     configurable: bool = False
     opt_in: bool = False
     opt_in_hint: Optional[str] = None
+    status_env: Optional[str] = None
 
 class TestEndpointRequest(BaseModel):
     endpoint: str

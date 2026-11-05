@@ -14,6 +14,8 @@ version: "2.0"
 #   health_auth_env: naam van env-var met Bearer-token (optioneel)
 #   opt_in: true + opt_in_hint: faculteit die standaard uit staat (feature-flag);
 #     de kaart toont "Uit (opt-in)" i.p.v. groen. opt_in_hint noemt de env om te starten.
+#   status_env: naam van de env-var in de host-container die de opt-in live aan/uit zet;
+#     staat die op "true", dan toont de kaart "Opt-in actief" i.p.v. "Uit (opt-in)".
 
 # HARNAS — Gaia Cloud: agency, SOUL, orkestratie, Response Engine
 components:
@@ -125,6 +127,7 @@ components:
     host_component: "core"
     opt_in: true
     opt_in_hint: "GAIA_KAIROS_ENABLED=true"
+    status_env: "GAIA_KAIROS_ENABLED"
     ui_url: "http://100.65.0.15:8891/admin"
     ui_label: "Gaia Admin (Kairos-rol)"
     configurable: false

@@ -177,6 +177,14 @@ class RegistryManager:
         
         components_def = self._raw_registry.get("components", [])
 
+        # Component-id -> containernaam, zodat een sub-component (zoals Kairos)
+        # de live vlag uit zijn host-container kan lezen.
+        container_by_component_id = {
+            comp.get("id"): comp.get("container")
+            for comp in components_def
+            if comp.get("container")
+        }
+
         # Feed-gebaseerde componenten (client achter NAT): liveness uit de
         # Foundation-ingestiefeed i.p.v. een HTTP-probe of Docker-container.
         feed_activity: Dict[str, Dict[str, Any]] = {}
@@ -268,12 +276,22 @@ class RegistryManager:
                 # V3-doelcomponent dat nog niet bestaat: nooit rood tonen
                 composite_status = "unknown"
             elif comp.get("opt_in"):
-                # Faculteit die standaard uit staat (feature-flag). De registry
-                # kent geen live signaal voor de vlag, dus tonen we eerlijk
-                # "uit (opt-in)" i.p.v. een misleidend groen "ok".
+                # Faculteit die standaard uit staat (feature-flag). Is er een
+                # status_env opgegeven, lees dan de live vlag uit de
+                # host-container; anders rest alleen de eerlijke aanname "uit".
                 composite_status = "disabled"
                 hint = comp.get("opt_in_hint")
                 status_detail = "Opt-in: standaard uit" + (f" — start met {hint}" if hint else "")
+
+                status_env = comp.get("status_env")
+                if status_env:
+                    host_name = comp.get("container") or container_by_component_id.get(comp.get("host_component"))
+                    host_data = containers_by_name.get(host_name) if host_name else None
+                    if host_data and host_data.get("raw_status") == "running":
+                        if docker_service.get_container_env_flag(host_name, status_env):
+                            composite_status = "running"
+                            status_detail = f"Opt-in actief — {status_env}=true"
+                            status_reason = "opt-in-active"
             elif comp.get("runtime") == "pm2":
                 # Special handling for host processes like Chronicle
                 if health_res and health_res.get("status") == "ok":
