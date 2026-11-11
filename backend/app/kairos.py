@@ -141,6 +141,19 @@ class KairosClient:
             raise KairosError("Geen episodes op deze dag; er is niets om samen te vatten.")
         if resp.status_code == 401:
             raise KairosError("Gaia API weigerde de token van het Control Center.")
+        if resp.status_code == 422:
+            count = None
+            try:
+                payload = resp.json()
+            except ValueError:
+                payload = {}
+            if isinstance(payload, dict):
+                count = payload.get("episodeCount")
+            if isinstance(count, int):
+                raise KairosError(
+                    f"Deze dag heeft maar {count} episode(s); een overzicht begint bij 5."
+                )
+            raise KairosError("Te weinig episodes op deze dag om een overzicht van te maken.")
         if resp.status_code >= 400:
             raise KairosError(f"Gaia API gaf HTTP {resp.status_code} terug.")
         try:
