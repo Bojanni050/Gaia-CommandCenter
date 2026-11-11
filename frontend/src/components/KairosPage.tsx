@@ -39,6 +39,9 @@ export const KairosPage: React.FC = () => {
   const [since, setSince] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // De app-tag-lijst in de kop staat standaard ingeklapt: bij veel apps werd
+  // die rij anders een lange strook die het tijdvenster overstemde.
+  const [tagsExpanded, setTagsExpanded] = useState<boolean>(false);
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
   const fetchPage = useCallback(
@@ -177,12 +180,31 @@ export const KairosPage: React.FC = () => {
             <span className="text-ink-300">{formatTime(stats.earliest)}</span>
             <span>&rarr;</span>
             <span className="text-ink-300">{formatTime(stats.latest)}</span>
-            <span className="text-ink-600 mx-1">&bull;</span>
-            {Object.entries(stats.by_primary_app).map(([app, n]) => (
-              <span key={app} className="px-1.5 py-0.5 rounded bg-ink-800/60 border border-ink-700/40 text-sage-300/90">
-                {app}: {n}
-              </span>
-            ))}
+            {Object.keys(stats.by_primary_app).length > 0 && (
+              <>
+                <span className="text-ink-600 mx-1">&bull;</span>
+                <button
+                  type="button"
+                  onClick={() => setTagsExpanded((v) => !v)}
+                  aria-expanded={tagsExpanded}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-ink-800/60 border border-ink-700/40 text-ink-300 hover:text-sage-300 hover:border-sage-600/60 transition-colors cursor-pointer"
+                  title={tagsExpanded ? 'App-tags verbergen' : 'App-tags tonen'}
+                >
+                  {tagsExpanded ? (
+                    <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
+                  <span>{Object.keys(stats.by_primary_app).length} app-tags</span>
+                </button>
+                {tagsExpanded &&
+                  Object.entries(stats.by_primary_app).map(([app, n]) => (
+                    <span key={app} className="px-1.5 py-0.5 rounded bg-ink-800/60 border border-ink-700/40 text-sage-300/90">
+                      {app}: {n}
+                    </span>
+                  ))}
+              </>
+            )}
           </div>
         )}
       </div>
