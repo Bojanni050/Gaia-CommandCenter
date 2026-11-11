@@ -12,9 +12,10 @@ import {
   Layers,
   Radio,
   Link2,
+  FileText,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { KairosEpisode, KairosStats } from '../types';
+import { KairosDigest, KairosEpisode, KairosStats } from '../types';
 import { SourceModal } from './SourceModal';
 
 // Kairos synthetiseert narratieve episodes uit de rauwe Foundation-observaties;
@@ -23,6 +24,19 @@ import { SourceModal } from './SourceModal';
 
 const EPISTEMIC_BADGE = 'bg-sage-950/60 border-sage-700/50 text-sage-300';
 const PAGE_SIZE = 200;
+
+/** YYYY-MM-DD in de browserzone — dezelfde kalenderdag als de digest gebruikt. */
+const toLocalDate = (date: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+/** De laatste afgesloten dag; vandaag heeft nog geen volledig overzicht. */
+const yesterdayLocalDate = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return toLocalDate(d);
+};
 
 export const KairosPage: React.FC = () => {
   const [items, setItems] = useState<KairosEpisode[]>([]);
@@ -43,6 +57,43 @@ export const KairosPage: React.FC = () => {
   // die rij anders een lange strook die het tijdvenster overstemde.
   const [tagsExpanded, setTagsExpanded] = useState<boolean>(false);
   const [sourceRef, setSourceRef] = useState<string | null>(null);
+
+  // --- Dagoverzicht ---
+  // Eén samenvatting per afgesloten dag. Standaard gisteren: de dag die de
+  // scheduler 's ochtends heeft geschreven.
+  const [digestDate, setDigestDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return toLocalDate(d);
+  });
+  const [digests, setDigests] = useState<KairosDigest[]>([]);
+  const [digestWriting, setDigestWriting] = useState<boolean>(false);
+  const [digestMessage, setDigestMessage] = useState<string | null>(null);
+
+  const digest = digests.find((d) => d.digest_date === digestDate) ?? null;
+
+  const fetchDigests = useCallback(() => {
+    api.getKairosDigests(30)
+      .then((r) => setDigests(r.items))
+      .catch(() => { /* het overzicht is bijzaak; de lijst eronder moet blijven werken */ });
+  }, []);
+
+  useEffect(() => {
+    fetchDigests();
+  }, [fetchDigests]);
+
+  const writeDigest = (force: boolean) => {
+    setDigestWriting(true);
+    setDigestMessage(null);
+    api.generateKairosDigest(digestDate, force)
+      .then((written) => {
+        setDigests((prev) => [written, ...prev.filter((d) => d.digest_date !== written.digest_date)]
+          .sort((a, b) => b.digest_date.localeCompare(a.digest_date)));
+        setDigestMessage(null);
+      })
+      .catch((err: Error) => setDigestMessage(err.message || 'Kon het overzicht niet schrijven.'))
+      .finally(() => setDigestWriting(false));
+  };
 
   const fetchPage = useCallback(
     (page: number) =>
@@ -116,6 +167,11 @@ export const KairosPage: React.FC = () => {
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchDigests, 60000);
+    return () => clearInterval(interval);
+  }, [fetchDigests]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(items, null, 2));
@@ -207,6 +263,85 @@ export const KairosPage: React.FC = () => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Dagoverzicht — de episodes van één afgesloten dag in een paar zinnen */}
+      <div className="glass-panel p-5 border border-sage-700/40 relative overflow-hidden">
+        <div className="absolute -top-16 -right-10 w-48 h-48 bg-sage-500/5 rounded-full blur-[70px] pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sage-950/60 border border-sage-700/50 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-4 h-4 text-sage-400" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg text-ink-50 leading-tight">Dagoverzicht</h3>
+              <p className="text-[11px] font-mono text-ink-500 mt-0.5">
+                {digest
+                  ? `${digest.episode_count} episodes · ${digest.timezone}`
+                  : 'nog niet geschreven voor deze dag'}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+            <input
+              type="date"
+              value={digestDate}
+              max={yesterdayLocalDate()}
+              onChange={(e) => {
+                setDigestDate(e.target.value);
+                setDigestMessage(null);
+              }}
+              className="bg-ink-950 border border-ink-800 rounded px-2 py-1 text-xs text-ink-300 focus:outline-none focus:border-sage-400/40 cursor-pointer"
+              title="Kies een dag"
+            />
+            <button
+              type="button"
+              onClick={() => writeDigest(Boolean(digest))}
+              disabled={digestWriting}
+              className="btn-ghost py-1 px-2.5 text-xs text-sage-300 border border-sage-700/50 hover:bg-sage-500/10 rounded disabled:opacity-50 inline-flex items-center gap-1.5"
+              title={digest ? 'Herschrijf dit overzicht' : 'Schrijf het overzicht voor deze dag'}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${digestWriting ? 'animate-spin' : ''}`} />
+              {digestWriting ? 'Schrijven...' : digest ? 'Herschrijf' : 'Schrijf overzicht'}
+            </button>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-4">
+          {digest ? (
+            <>
+              {digest.title && (
+                <p className="font-serif text-base text-sage-200">{digest.title}</p>
+              )}
+              <p className="mt-1.5 text-sm text-ink-200 leading-relaxed whitespace-pre-line">
+                {digest.summary}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-ink-500">
+                <span className="px-1.5 py-0.5 rounded bg-ink-900 border border-ink-700/50 text-sage-300/90">
+                  {digest.digest_date}
+                </span>
+                {digest.apps.slice(0, 8).map((app) => (
+                  <span
+                    key={app}
+                    className="px-1.5 py-0.5 rounded bg-ink-900 border border-ink-700/50 text-gold-300/90"
+                  >
+                    {app}
+                  </span>
+                ))}
+                {digest.model && <span className="text-ink-600 ml-1">{digest.model}</span>}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs font-mono text-ink-500 italic leading-relaxed">
+              Nog geen overzicht voor {digestDate}. De scheduler schrijft elke ochtend na
+              07:00 het overzicht van de dag ervoor; met de knop hierboven kun je een dag
+              ook nu laten schrijven.
+            </p>
+          )}
+          {digestMessage && (
+            <p className="mt-2 text-[11px] font-mono text-clay-300">{digestMessage}</p>
+          )}
+        </div>
       </div>
 
       {error && (

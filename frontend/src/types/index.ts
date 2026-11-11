@@ -297,6 +297,23 @@ export interface KairosStats {
   latest: string | null;
 }
 
+// Eén dagoverzicht: de episodes van een afgesloten dag, samengevat. `episode_ids`
+// loopt terug naar de afzonderlijke episodes van die dag.
+export interface KairosDigest {
+  id: string;
+  bank_id: string;
+  digest_date: string;
+  timezone: string;
+  title: string;
+  summary: string;
+  episode_count: number;
+  episode_ids: string[];
+  apps: string[];
+  model: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Eén rauwe Foundation-observatie (ingest_object) — de bron achter een episode.
 export interface IngestObject {
   id?: string;

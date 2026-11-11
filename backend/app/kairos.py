@@ -92,6 +92,62 @@ class KairosClient:
                 return self._cache["objects"]
             return await self._fetch_all(now)
 
+    async def fetch_digests(self, limit: int = 30) -> List[Dict[str, Any]]:
+        """De opgeslagen dagoverzichten (nieuwste eerst) uit Cognition.
+
+        Klein en goedkoop (één verzoek, geen paginering): de digest-tabel heeft
+        per definitie één rij per dag.
+        """
+        url = f"{self.base_url}/v1/banks/{self.bank_id}/digests"
+        try:
+            async with httpx.AsyncClient(
+                timeout=settings.COGNITION_HTTP_TIMEOUT_SECONDS, follow_redirects=True
+            ) as client:
+                resp = await client.get(
+                    url, headers={"Accept": "application/json"}, params={"limit": limit}
+                )
+        except httpx.HTTPError as exc:
+            raise KairosError(f"Cognition onbereikbaar op {self.base_url}: {exc}") from exc
+        if resp.status_code >= 400:
+            raise KairosError(f"Cognition gaf HTTP {resp.status_code} terug op /digests.")
+        try:
+            body = resp.json()
+        except ValueError as exc:
+            raise KairosError("Cognition gaf geen geldige JSON terug.") from exc
+        rows = body.get("data") if isinstance(body, dict) else None
+        return [r for r in (rows or []) if isinstance(r, dict)]
+
+    async def generate_digest(self, date: str, force: bool = False) -> Dict[str, Any]:
+        """Laat Gaia API het overzicht voor één dag schrijven.
+
+        De generatie hoort daar: de Kairos-modelrol en de prompt wonen in
+        gaia-api, niet in dit dashboard. Dit is bewust de enige schrijfactie die
+        het Control Center uitvoert, en alleen op een expliciete klik.
+        """
+        base = str(settings.GAIA_API_URL).rstrip("/")
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        if settings.GAIA_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.GAIA_API_TOKEN}"
+        try:
+            async with httpx.AsyncClient(
+                timeout=settings.GAIA_API_TIMEOUT_SECONDS, follow_redirects=True
+            ) as client:
+                resp = await client.post(
+                    f"{base}/kairos/digest", headers=headers, json={"date": date, "force": force}
+                )
+        except httpx.HTTPError as exc:
+            raise KairosError(f"Gaia API onbereikbaar op {base}: {exc}") from exc
+        if resp.status_code == 404:
+            raise KairosError("Geen episodes op deze dag; er is niets om samen te vatten.")
+        if resp.status_code == 401:
+            raise KairosError("Gaia API weigerde de token van het Control Center.")
+        if resp.status_code >= 400:
+            raise KairosError(f"Gaia API gaf HTTP {resp.status_code} terug.")
+        try:
+            return resp.json()
+        except ValueError as exc:
+            raise KairosError("Gaia API gaf geen geldige JSON terug.") from exc
+
     async def _fetch_all(self, now: float) -> List[Dict[str, Any]]:
         collected: List[Dict[str, Any]] = []
         async with httpx.AsyncClient(

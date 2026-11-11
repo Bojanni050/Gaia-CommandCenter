@@ -47,6 +47,15 @@ class Settings(BaseSettings):
     COGNITION_BANK_ID: str = os.getenv("COGNITION_BANK_ID", "gaia")
     COGNITION_HTTP_TIMEOUT_SECONDS: float = float(os.getenv("COGNITION_HTTP_TIMEOUT_SECONDS", "5"))
 
+    # Dagoverzicht — leest de opgeslagen digest uit Cognition, maar laat hem
+    # genereren door Gaia API (daar woont de Kairos-rol en de model-call).
+    # De token staat al in de container-env (zelfde als de clients gebruiken).
+    GAIA_API_URL: str = os.getenv(
+        "GAIA_API_URL", f"http://{os.getenv('TAILSCALE_HOST', '100.65.0.15')}:8891"
+    )
+    GAIA_API_TOKEN: str = os.getenv("GAIA_API_TOKEN", "")
+    GAIA_API_TIMEOUT_SECONDS: float = float(os.getenv("GAIA_API_TIMEOUT_SECONDS", "120"))
+
     # Recall-latency — de bron is Hindsight's Prometheus /metrics (de
     # recall-histogram `hindsight_http_duration_seconds`). Hindsight is
     # Tailscale-gebonden en kent geen auth (net als Cognition).

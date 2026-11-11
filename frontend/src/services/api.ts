@@ -1,4 +1,4 @@
-import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisodePage, KairosStats, IngestObject } from '../types';
+import { SystemMetrics, GaiaComponent, ContainerInfo, AuthStatus, LogIssue, LogAnalysisReport, IngestEvent, IngestLogStats, Hypothesis, HypothesisStats, RecallLatency, KairosEpisodePage, KairosStats, KairosDigest, IngestObject } from '../types';
 
 const API_BASE = '/api';
 
@@ -215,6 +215,22 @@ class ApiService {
 
   async getKairosStats(): Promise<KairosStats> {
     return this.request<KairosStats>('/kairos/stats');
+  }
+
+  // Dagoverzicht — één samenvatting per afgesloten dag, geschreven door Gaia API
+  // en opgeslagen in Cognition.
+  async getKairosDigests(limit = 30): Promise<{ items: KairosDigest[] }> {
+    return this.request<{ items: KairosDigest[] }>(`/kairos/digests?limit=${limit}`);
+  }
+
+  async getKairosDigest(date?: string): Promise<KairosDigest> {
+    const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+    return this.request<KairosDigest>(`/kairos/digest${qs}`);
+  }
+
+  async generateKairosDigest(date: string, force = false): Promise<KairosDigest> {
+    const qs = `?date=${encodeURIComponent(date)}${force ? '&force=true' : ''}`;
+    return this.request<KairosDigest>(`/kairos/digest${qs}`, { method: 'POST' });
   }
 
   // De rauwe Foundation-observatie achter een Kairos-bron (`foundation:<uuid>`)
